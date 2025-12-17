@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildSessionCookie, createSession } from '../../../../../lib/auth';
-import { COOKIE_NAME } from '../../../../../lib/constants';
+import { buildSessionCookie, createSession } from '../../../../lib/auth';
+import { COOKIE_NAME } from '../../../../lib/constants';
 
 export async function POST(req: NextRequest) {
   const { username, password } = await req.json();
