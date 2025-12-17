@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Post } from '../lib/content';
