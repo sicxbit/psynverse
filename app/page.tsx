@@ -64,9 +64,9 @@ export default async function HomePage() {
       <section className="card p-6">
         <p className="text-sm uppercase tracking-[0.3em] text-midnight/60">Certifications</p>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm text-midnight/70">
-          <div className="rounded-xl bg-white/70 py-3">Trauma-informed Care</div>
-          <div className="rounded-xl bg-white/70 py-3">Mindfulness Coaching</div>
-          <div className="rounded-xl bg-white/70 py-3">Positive Psychology</div>
+          <div className="rounded-xl bg-white/70 py-3">Certified idiot in love </div>
+          <div className="rounded-xl bg-white/70 py-3">Mindless </div>
+          <div className="rounded-xl bg-white/70 py-3">Positive Psychology <br/> ( i dont know about client ) </div>
           <div className="rounded-xl bg-white/70 py-3">Social Work Practice</div>
         </div>
       </section>
