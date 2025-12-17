@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-mist text-midnight antialiased font-sans;
+}
+
+a {
+  @apply text-midnight underline decoration-2 decoration-sage hover:text-midnight/80;
+}
+
+.prose {
+  @apply prose-slate max-w-none prose-p:first:mt-0 prose-headings:font-serif prose-headings:text-midnight;
+}
+
+.card {
+  @apply bg-white/80 backdrop-blur-sm rounded-3xl shadow-soft border border-white/60;
+}

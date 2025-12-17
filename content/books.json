@@ -1,0 +1,23 @@
+[
+  {
+    "id": "book-anchors",
+    "title": "Anchors in the Storm",
+    "author": "Lina Mercer",
+    "link": "https://example.com/anchors",
+    "note": "Short practices for stabilizing emotions."
+  },
+  {
+    "id": "book-self-kindness",
+    "title": "Self-Kindness Workbook",
+    "author": "Ravi Menon",
+    "link": "https://example.com/kindness",
+    "note": "Seven-week journey toward softer self-talk."
+  },
+  {
+    "id": "book-rest",
+    "title": "Rest as Rebellion",
+    "author": "Amara Brooks",
+    "link": "https://example.com/rest",
+    "note": "Essays on boundaries and sustainable care."
+  }
+]
