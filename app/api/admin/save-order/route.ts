@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
-import { requireAdmin } from '../../../../../lib/auth';
-import { resolveContentPath, writeJsonAtomic } from '../../../../../lib/fs-utils';
+import { requireAdmin } from '../../../../lib/auth';
+import { resolveContentPath, writeJsonAtomic } from '../../../../lib/fs-utils';
 
 export async function POST(req: NextRequest) {
   const session = requireAdmin(req);
