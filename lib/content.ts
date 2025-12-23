@@ -28,6 +28,7 @@ export type Book = {
   title: string;
   author: string;
   link: string;
+  image?: string;
   note?: string;
 };
 
