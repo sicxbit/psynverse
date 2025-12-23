@@ -1,10 +1,12 @@
+import Image from 'next/image';
 import { BRAND } from '../lib/constants';
+import logo from '../logo.png';
 
 export function BrandHeader() {
   return (
     <header className="flex items-center justify-between gap-4 mb-10">
-      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-midnight/80 to-midnight flex items-center justify-center text-white font-serif text-xl shadow-soft">
-        P
+      <div className="h-12 w-12 rounded-full bg-white/80 shadow-soft flex items-center justify-center overflow-hidden">
+        <Image src={logo} alt={`${BRAND.name} logo`} className="h-full w-full object-cover" priority />
       </div>
       <div className="flex-1 h-px bg-gradient-to-r from-midnight/10 via-midnight/30 to-midnight/10" />
       <div className="text-right">
