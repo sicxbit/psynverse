@@ -6,6 +6,11 @@ import { BRAND } from '../lib/constants';
 export const metadata: Metadata = {
   title: `${BRAND.name} • ${BRAND.tagline}`,
   description: `${BRAND.author} — ${BRAND.credentials}`,
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
   openGraph: {
     title: BRAND.name,
     description: BRAND.tagline,
