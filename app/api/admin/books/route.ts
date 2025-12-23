@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     title: String(book.title || ''),
     author: String(book.author || ''),
     link: String(book.link || '#'),
+    image: book.image ? String(book.image) : undefined,
     note: book.note ? String(book.note) : '',
   }));
 

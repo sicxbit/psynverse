@@ -124,13 +124,13 @@ export default async function HomePage() {
           </p>
           <p className="text-sm text-midnight/70">
             Email us directly at{' '}
-            <a className="font-semibold text-midnight hover:text-midnight/80" href="mailto:REPLACE_WITH_CLIENT_EMAIL@example.com">
-              REPLACE_WITH_CLIENT_EMAIL@example.com
+            <a className="font-semibold text-midnight hover:text-midnight/80" href="mailto:psynverse@gmail.com">
+              psynverse@gmail.com
             </a>
           </p>
         </div>
         <form
-          action="mailto:REPLACE_WITH_CLIENT_EMAIL@example.com"
+          action="mailto:psynverse@gmail.com"
           method="post"
           encType="text/plain"
           className="grid gap-4"
