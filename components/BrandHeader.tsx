@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { BRAND } from '../lib/constants';
-import logo from '../logo.png';
+import logo from '../logo.svg';
 
 export function BrandHeader() {
   return (
