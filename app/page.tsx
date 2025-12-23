@@ -8,6 +8,28 @@ import { getAllPosts, getBooks } from '../lib/content';
 export default async function HomePage() {
   const posts = await getAllPosts();
   const books = await getBooks();
+  const services = [
+    {
+      title: 'Counciling Service',
+      description: 'Personalized guidance sessions that focus on clarity, resilience, and steady progress.',
+    },
+    {
+      title: 'Couples Therapy',
+      description: 'Supportive conversations that strengthen communication and deepen mutual understanding.',
+    },
+    {
+      title: 'Family and Maritial Counciling',
+      description: 'Collaborative family sessions to rebuild trust and foster healthier dynamics.',
+    },
+    {
+      title: 'Psychotherapy',
+      description: 'Evidence-informed care to explore patterns, heal gently, and build emotional balance.',
+    },
+    {
+      title: 'Human Workshops and Classes',
+      description: 'Interactive learning experiences designed to cultivate insight and lasting skills.',
+    },
+  ];
 
   return (
     <main className="space-y-10">
@@ -32,6 +54,28 @@ export default async function HomePage() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 rounded-2xl bg-gradient-to-br from-white/70 to-sage/60 border border-white/80" />
           ))}
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-2xl text-midnight">Services</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {services.map((service) => (
+            <article key={service.title} className="card p-6 space-y-3">
+              <h3 className="font-serif text-xl text-midnight">{service.title}</h3>
+              <p className="text-sm text-midnight/80 leading-relaxed">{service.description}</p>
+            </article>
+          ))}
+        </div>
+        <div>
+          <Link
+            href="#contact"
+            className="inline-flex items-center gap-2 rounded-full bg-midnight text-white px-5 py-2 font-semibold hover:bg-midnight/90"
+          >
+            Book a Session →
+          </Link>
         </div>
       </section>
 
@@ -69,6 +113,99 @@ export default async function HomePage() {
           tools. Her work is rooted in a postgraduate focus on psychiatric social work, a diploma in counselling
           psychology, and a KAPS Professional Licence.
         </p>
+      </section>
+
+      <section id="contact" className="card p-6 md:p-10 space-y-6">
+        <div className="space-y-2">
+          <p className="text-sm uppercase tracking-[0.3em] text-midnight/60">Reach Out</p>
+          <h2 className="font-serif text-3xl text-midnight">Contact</h2>
+          <p className="text-midnight/80 leading-relaxed">
+            Share what you need support with and we will guide you toward the right next step.
+          </p>
+          <p className="text-sm text-midnight/70">
+            Email us directly at{' '}
+            <a className="font-semibold text-midnight hover:text-midnight/80" href="mailto:REPLACE_WITH_CLIENT_EMAIL@example.com">
+              REPLACE_WITH_CLIENT_EMAIL@example.com
+            </a>
+          </p>
+        </div>
+        <form
+          action="mailto:REPLACE_WITH_CLIENT_EMAIL@example.com"
+          method="post"
+          encType="text/plain"
+          className="grid gap-4"
+        >
+          <div className="grid gap-2">
+            <label htmlFor="contact-name" className="text-sm font-semibold text-midnight">
+              Full Name
+            </label>
+            <input
+              id="contact-name"
+              name="name"
+              type="text"
+              required
+              placeholder="Your full name"
+              className="peer w-full rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-sm text-midnight placeholder:text-midnight/50 focus:outline-none focus:ring-2 focus:ring-midnight/30"
+            />
+            <p className="text-xs text-rose-600 opacity-0 transition peer-invalid:opacity-100 peer-placeholder-shown:opacity-0">
+              Please enter your full name.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="contact-email" className="text-sm font-semibold text-midnight">
+              Email
+            </label>
+            <input
+              id="contact-email"
+              name="email"
+              type="email"
+              required
+              placeholder="you@example.com"
+              className="peer w-full rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-sm text-midnight placeholder:text-midnight/50 focus:outline-none focus:ring-2 focus:ring-midnight/30"
+            />
+            <p className="text-xs text-rose-600 opacity-0 transition peer-invalid:opacity-100 peer-placeholder-shown:opacity-0">
+              Please enter a valid email address.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="contact-subject" className="text-sm font-semibold text-midnight">
+              Subject
+            </label>
+            <input
+              id="contact-subject"
+              name="subject"
+              type="text"
+              required
+              placeholder="How can we help?"
+              className="peer w-full rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-sm text-midnight placeholder:text-midnight/50 focus:outline-none focus:ring-2 focus:ring-midnight/30"
+            />
+            <p className="text-xs text-rose-600 opacity-0 transition peer-invalid:opacity-100 peer-placeholder-shown:opacity-0">
+              Please add a subject line.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="contact-message" className="text-sm font-semibold text-midnight">
+              Message
+            </label>
+            <textarea
+              id="contact-message"
+              name="message"
+              required
+              rows={5}
+              placeholder="Write your message here."
+              className="peer w-full rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-sm text-midnight placeholder:text-midnight/50 focus:outline-none focus:ring-2 focus:ring-midnight/30"
+            />
+            <p className="text-xs text-rose-600 opacity-0 transition peer-invalid:opacity-100 peer-placeholder-shown:opacity-0">
+              Please share a short message.
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="inline-flex w-full items-center justify-center rounded-full bg-midnight px-6 py-3 text-sm font-semibold text-white hover:bg-midnight/90 md:w-auto"
+          >
+            Send Message
+          </button>
+        </form>
       </section>
       <section className="card p-6">
         <p className="text-sm uppercase tracking-[0.3em] text-midnight/60">Certifications</p>
