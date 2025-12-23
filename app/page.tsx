@@ -80,6 +80,18 @@ export default async function HomePage() {
           <div className="rounded-xl bg-white/70 py-3">KAPS Professional Licence</div>
         </div>
       </section>
+
+      <section className="card p-6 md:p-10 space-y-4">
+        <p className="text-sm uppercase tracking-[0.3em] text-midnight/60">About Fidha</p>
+        <h2 className="font-serif text-3xl text-midnight">
+          {BRAND.author} <span className="text-midnight/70">— {BRAND.credentials}</span>
+        </h2>
+        <p className="text-midnight/80 leading-relaxed">
+          Fidha Nashim is a psychology practitioner and social worker who blends compassionate listening with practical
+          tools. Her work is rooted in a postgraduate focus on psychiatric social work, a diploma in counselling
+          psychology, and a KAPS Professional Licence.
+        </p>
+      </section>
     </main>
   );
 }
