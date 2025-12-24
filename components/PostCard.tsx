@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format } from 'date-fns';
-import { Post } from '../lib/content';
+import { Post } from '../lib/content-shared';
 import { motion } from 'framer-motion';
 
 export function PostCard({ post, index }: { post: Post; index: number }) {
@@ -12,6 +13,17 @@ export function PostCard({ post, index }: { post: Post; index: number }) {
       transition={{ delay: index * 0.05 }}
       className="card p-6 flex flex-col gap-3"
     >
+      {post.coverImage && (
+        <div className="relative overflow-hidden rounded-xl border border-white/80 bg-sage/30 aspect-[16/9]">
+          <Image
+            src={post.coverImage}
+            alt={`${post.title} cover`}
+            fill
+            sizes="(min-width: 1024px) 360px, (min-width: 768px) 480px, 100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between text-sm text-midnight/60">
         <span>{format(new Date(post.date), 'PPP')}</span>
         <span>{post.readingMinutes} min read</span>

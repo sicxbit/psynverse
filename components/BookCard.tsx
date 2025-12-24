@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Book } from '../lib/content';
+import { Book } from '../lib/content-shared';
 
 export function BookCard({ book }: { book: Book }) {
   return (
