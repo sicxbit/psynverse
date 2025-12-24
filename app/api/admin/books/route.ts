@@ -17,11 +17,11 @@ export async function POST(req: NextRequest) {
 
   const cleaned: Book[] = books.map((book) => ({
     id: String(book.id),
-    title: String(book.title || ''),
-    author: String(book.author || ''),
-    link: String(book.link || '#'),
-    image: book.image ? String(book.image) : undefined,
-    note: book.note ? String(book.note) : '',
+    title: String(book.title || '').trim(),
+    author: String(book.author || '').trim(),
+    link: String(book.link || '#').trim(),
+    image: book.image ? String(book.image).trim() : undefined,
+    note: book.note ? String(book.note).trim() : '',
   }));
 
   const booksPath = resolveContentPath('books.json');
