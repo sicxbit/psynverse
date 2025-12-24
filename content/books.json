@@ -15,10 +15,11 @@
     "note": "A practical and experience based guide for professionals in psychology and case assessment, for quick and easy understanding and performance of basic psychology and MSE"
   },
   {
-    "id": "book-jithu-great",
-    "title": "Jithu the Great",
+    "id": "book-stress-bust",
+    "title": "Stress Bust",
     "author": "Fidha",
-    "link": "https://example.com/jithu-the-great",
+    "link": "https://example.com/stress-bust",
+    "image": "/books/stress_bust.jpeg",
     "note": "Coming soon."
   },
   {
