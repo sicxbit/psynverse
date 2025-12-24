@@ -1,27 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Book, Post } from '../lib/content';
-import { applyPostOrdering } from '../lib/content';
+import type { Book, Post } from '../lib/content-shared';
+import { applyPostOrdering } from '../lib/content-shared';
 
 function moveItem<T>(arr: T[], from: number, to: number) {
   const copy = [...arr];
   const [item] = copy.splice(from, 1);
   copy.splice(to, 0, item);
   return copy;
-}
-
-function orderPosts(posts: Post[], order: string[]) {
-  const map = new Map(posts.map((p) => [p.slug, p] as const));
-  const ordered: Post[] = [];
-  for (const slug of order) {
-    const post = map.get(slug);
-    if (post) {
-      ordered.push(post);
-      map.delete(slug);
-    }
-  }
-  return [...ordered, ...map.values()];
 }
 
 export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
@@ -97,7 +84,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   const addBook = () => {
     setBookList((prev) => [
       ...prev,
-      { id: `book-${Date.now()}`, title: 'New Book', author: 'Author', link: '#', note: '' },
+      { id: `book-${Date.now()}`, title: 'New Book', author: 'Author', link: '#', image: '', note: '' },
     ]);
   };
 
@@ -464,6 +451,15 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                     onChange={(e) => handleBookChange(index, 'link', e.target.value)}
                     className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
                     placeholder="https://example.com"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-xs text-midnight/70">Image URL</span>
+                  <input
+                    value={book.image || ''}
+                    onChange={(e) => handleBookChange(index, 'image', e.target.value)}
+                    className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
+                    placeholder="https://example.com/cover.jpg"
                   />
                 </label>
                 <label className="space-y-1">

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../lib/auth';
 import { resolveContentPath, writeJsonAtomic } from '../../../../lib/fs-utils';
 import fs from 'fs/promises';
-import type { Book } from '../../../../lib/content';
+import type { Book } from '../../../../lib/content-shared';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const session = requireAdmin(req);

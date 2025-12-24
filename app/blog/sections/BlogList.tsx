@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Post } from '../../../lib/content';
+import { Post } from '../../../lib/content-shared';
 import { TagFilter } from '../../../components/TagFilter';
 import { PostCard } from '../../../components/PostCard';
 

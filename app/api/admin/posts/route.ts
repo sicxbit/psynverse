@@ -5,7 +5,9 @@ import matter from 'gray-matter';
 import { requireAdmin } from '../../../../lib/auth';
 import { resolveContentPath, writeJsonAtomic } from '../../../../lib/fs-utils';
 import { getPostBySlug } from '../../../../lib/content';
-import type { PostFrontmatter, SiteSettings } from '../../../../lib/content';
+import type { PostFrontmatter, SiteSettings } from '../../../../lib/content-shared';
+
+export const runtime = 'nodejs';
 
 type PostPayload = {
   title?: string;
@@ -167,7 +169,7 @@ export async function POST(req: NextRequest) {
   const blogOrder = await updateBlogOrder(payload.slug);
   const savedPost = await getPostBySlug(payload.slug);
 
-  return NextResponse.json({ post: savedPost, blogOrder });
+  return NextResponse.json({ ok: true, post: savedPost, blogOrder });
 }
 
 export async function PUT(req: NextRequest) {
@@ -207,7 +209,7 @@ export async function PUT(req: NextRequest) {
   const blogOrder = await updateBlogOrder(payload.slug, currentSlug);
   const savedPost = await getPostBySlug(payload.slug);
 
-  return NextResponse.json({ post: savedPost, blogOrder });
+  return NextResponse.json({ ok: true, post: savedPost, blogOrder });
 }
 
 export async function DELETE(req: NextRequest) {

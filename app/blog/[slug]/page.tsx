@@ -3,6 +3,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { getAllPosts, getPostBySlug } from '../../../lib/content';
 import type { Metadata } from 'next';
@@ -57,6 +58,19 @@ export default async function BlogDetail({ params }: { params: { slug: string } 
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {post.coverImage && (
+        <div className="relative overflow-hidden rounded-2xl border border-white/80 bg-sage/30 aspect-[16/9]">
+          <Image
+            src={post.coverImage}
+            alt={`${post.title} cover`}
+            fill
+            sizes="(min-width: 1024px) 960px, 100vw"
+            className="object-cover"
+            priority
+          />
         </div>
       )}
 

@@ -3,6 +3,8 @@ import fs from 'fs/promises';
 import { requireAdmin } from '../../../../lib/auth';
 import { resolveContentPath, writeJsonAtomic } from '../../../../lib/fs-utils';
 
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   const session = requireAdmin(req);
   if (!session) {
