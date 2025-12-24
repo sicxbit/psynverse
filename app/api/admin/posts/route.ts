@@ -17,16 +17,6 @@ type PostPayload = {
   content?: string;
 };
 
-type NormalizedPost = {
-  title: string;
-  slug: string;
-  date: string;
-  excerpt: string;
-  tags: string[] | string;
-  coverImage?: string;
-  content: string;
-};
-
 const BLOG_DIR = resolveContentPath('blog');
 const SETTINGS_PATH = resolveContentPath('site-settings.json');
 
@@ -108,7 +98,7 @@ async function removeFromBlogOrder(slug: string) {
   return settings.blogOrder;
 }
 
-function buildFrontmatter(payload: NormalizedPost, slug: string): PostFrontmatter {
+function buildFrontmatter(payload: Required<PostPayload>, slug: string): PostFrontmatter {
   const frontmatter: PostFrontmatter = {
     title: payload.title,
     date: payload.date,
@@ -124,7 +114,7 @@ function buildFrontmatter(payload: NormalizedPost, slug: string): PostFrontmatte
   return frontmatter;
 }
 
-function normalizePostInput(post?: PostPayload): NormalizedPost | null {
+function normalizePostInput(post?: PostPayload) {
   if (!post) return null;
   const title = String(post.title || '').trim();
   const date = String(post.date || '').trim();
@@ -144,10 +134,10 @@ function normalizePostInput(post?: PostPayload): NormalizedPost | null {
     tags: normalizeTags(post.tags),
     coverImage: post.coverImage ? String(post.coverImage).trim() : undefined,
     content,
-  };
+  } satisfies Required<PostPayload> & { slug: string };
 }
 
-async function writePostFile(targetPath: string, payload: NormalizedPost | null) {
+async function writePostFile(targetPath: string, payload: ReturnType<typeof normalizePostInput>) {
   if (!payload) return;
   const frontmatter = buildFrontmatter(payload, payload.slug);
   const fileContents = matter.stringify(payload.content, frontmatter);

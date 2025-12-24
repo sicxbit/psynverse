@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { Book, Post } from '../lib/content';
+import { applyPostOrdering } from '../lib/content';
 
 function moveItem<T>(arr: T[], from: number, to: number) {
   const copy = [...arr];
@@ -41,7 +42,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     content: '',
   });
 
-  const orderedPosts = useMemo(() => orderPosts(postList, blogOrder), [postList, blogOrder]);
+  const orderedPosts = useMemo(() => applyPostOrdering(postList, blogOrder), [postList, blogOrder]);
 
   const resetPostForm = () => {
     setEditingSlug(null);
