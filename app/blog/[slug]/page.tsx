@@ -33,21 +33,25 @@ export default async function BlogDetail({ params }: { params: { slug: string } 
   const next = index < allPosts.length - 1 ? allPosts[index + 1] : null;
 
   return (
-    <main className="relative space-y-6 pt-4">
-      <HomeLogoLink className="absolute right-0 top-0" />
-      <div className="space-y-2">
-        <p className="text-sm text-midnight/60">{format(new Date(post.date), 'PPP')} • {post.readingMinutes} min read</p>
-        <h1 className="font-serif text-4xl text-midnight">{post.title}</h1>
-        <p className="text-midnight/70">{post.excerpt}</p>
-        {post.tags?.length ? (
-          <div className="flex gap-2 flex-wrap">
-            {post.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-sage/60 px-3 py-1 text-xs text-midnight/80">
-                {tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
+    <main className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <p className="text-sm text-midnight/60">{format(new Date(post.date), 'PPP')} • {post.readingMinutes} min read</p>
+          <h1 className="font-serif text-4xl text-midnight">{post.title}</h1>
+          <p className="text-midnight/70">{post.excerpt}</p>
+          {post.tags?.length ? (
+            <div className="flex gap-2 flex-wrap">
+              {post.tags.map((tag) => (
+                <span key={tag} className="rounded-full bg-sage/60 px-3 py-1 text-xs text-midnight/80">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <Link href="/" className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-white/70">
+          Home
+        </Link>
       </div>
 
       {post.headings.length > 0 && (
