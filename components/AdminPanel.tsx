@@ -11,6 +11,19 @@ function moveItem<T>(arr: T[], from: number, to: number) {
   return copy;
 }
 
+function orderPosts(posts: Post[], order: string[]) {
+  const map = new Map(posts.map((p) => [p.slug, p] as const));
+  const ordered: Post[] = [];
+  for (const slug of order) {
+    const post = map.get(slug);
+    if (post) {
+      ordered.push(post);
+      map.delete(slug);
+    }
+  }
+  return [...ordered, ...map.values()];
+}
+
 export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   const [blogOrder, setBlogOrder] = useState(posts.map((p) => p.slug));
   const [postList, setPostList] = useState(posts);
