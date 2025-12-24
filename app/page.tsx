@@ -34,6 +34,13 @@ export default async function HomePage() {
     },
   ];
 
+  const aestheticImages = [
+    { src: '/aesthetics/image1.jpeg', alt: 'Soft, calming aesthetic scene with natural textures.' },
+    { src: '/aesthetics/image2.jpeg', alt: 'Serene, airy aesthetic with gentle light and greenery.' },
+    { src: '/aesthetics/image3.png', alt: 'Minimal, soothing aesthetic featuring neutral tones.' },
+    { src: '/aesthetics/image4.png', alt: 'Bright, tranquil aesthetic with organic shapes.' },
+  ];
+
   return (
     <main className="space-y-10">
       <BrandHeader />
@@ -54,8 +61,21 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="flex-1 grid grid-cols-2 gap-4 w-full">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 rounded-2xl bg-gradient-to-br from-white/70 to-sage/60 border border-white/80" />
+          {aestheticImages.map((image) => (
+            <div
+              key={image.src}
+              className="relative overflow-hidden rounded-2xl border border-white/80 bg-white/60"
+              style={{ aspectRatio: '4 / 3' }}
+            >
+              <Image
+                src={image.src}
+                alt={image.alt}
+                fill
+                sizes="(min-width: 1024px) 200px, (min-width: 768px) 220px, 50vw"
+                className="object-cover"
+                priority
+              />
+            </div>
           ))}
         </div>
       </section>
