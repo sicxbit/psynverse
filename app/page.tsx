@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { BrandHeader } from '../components/BrandHeader';
 import { PostCard } from '../components/PostCard';
@@ -100,16 +101,30 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="card p-6 md:p-10 space-y-4">
-        <p className="text-sm uppercase tracking-[0.3em] text-midnight/60">About Fidha</p>
-        <h2 className="font-serif text-3xl text-midnight">
-          {BRAND.author} <span className="text-midnight/70">— {BRAND.credentials}</span>
-        </h2>
-        <p className="text-midnight/80 leading-relaxed">
-          Fidha Nashim is a psychology practitioner and social worker who blends compassionate listening with practical
-          tools. Her work is rooted in a postgraduate focus on psychiatric social work, a diploma in counselling
-          psychology, and a KAPS Professional Licence.
-        </p>
+      <section className="card p-6 md:p-10 space-y-4 md:space-y-0 md:flex md:items-center md:gap-8">
+        <div className="w-full md:w-1/3">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-sage/40 border border-white/80">
+            <Image
+              src="/author/fidha.png"
+              alt="Fidha portrait"
+              fill
+              sizes="(min-width: 768px) 320px, 100vw"
+              className="object-cover"
+              priority
+            />
+          </div>
+        </div>
+        <div className="space-y-4 md:w-2/3">
+          <p className="text-sm uppercase tracking-[0.3em] text-midnight/60">About Fidha</p>
+          <h2 className="font-serif text-3xl text-midnight">
+            {BRAND.author} <span className="text-midnight/70">— {BRAND.credentials}</span>
+          </h2>
+          <p className="text-midnight/80 leading-relaxed">
+            Fidha Nashim is a psychology practitioner and social worker who blends compassionate listening with practical
+            tools. Her work is rooted in a postgraduate focus on psychiatric social work, a diploma in counselling
+            psychology, and a KAPS Professional Licence.
+          </p>
+        </div>
       </section>
 
       <ContactSection />
