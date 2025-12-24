@@ -19,6 +19,17 @@ type PostPayload = {
   content?: string;
 };
 
+type NormalizedPostInput = {
+  title: string;
+  slug: string;
+  date: string;
+  excerpt: string;
+  tags: string[];
+  content: string;
+  coverImage?: string;
+};
+
+
 const BLOG_DIR = resolveContentPath('blog');
 const SETTINGS_PATH = resolveContentPath('site-settings.json');
 
@@ -100,12 +111,13 @@ async function removeFromBlogOrder(slug: string) {
   return settings.blogOrder;
 }
 
-function buildFrontmatter(payload: Required<PostPayload>, slug: string): PostFrontmatter {
+
+function buildFrontmatter(payload: NormalizedPostInput, slug: string): PostFrontmatter {
   const frontmatter: PostFrontmatter = {
     title: payload.title,
     date: payload.date,
     excerpt: payload.excerpt,
-    tags: normalizeTags(payload.tags),
+    tags: payload.tags,
     slug,
   };
 
@@ -116,17 +128,20 @@ function buildFrontmatter(payload: Required<PostPayload>, slug: string): PostFro
   return frontmatter;
 }
 
-function normalizePostInput(post?: PostPayload) {
+
+function normalizePostInput(post?: PostPayload): NormalizedPostInput | null {
   if (!post) return null;
+
   const title = String(post.title || '').trim();
   const date = String(post.date || '').trim();
   const excerpt = String(post.excerpt || '').trim();
   const content = String(post.content || '').trim();
-  const slugSource = sanitizeSlug(String(post.slug || title));
 
-  if (!title || !date || !excerpt || !slugSource) {
-    return null;
-  }
+  const slugSource = sanitizeSlug(String(post.slug || title));
+  if (!title || !date || !excerpt || !slugSource) return null;
+
+  const cover = String(post.coverImage || '').trim();
+  const coverImage = cover ? cover : undefined;
 
   return {
     title,
@@ -134,17 +149,18 @@ function normalizePostInput(post?: PostPayload) {
     excerpt,
     slug: slugSource,
     tags: normalizeTags(post.tags),
-    coverImage: post.coverImage ? String(post.coverImage).trim() : undefined,
+    coverImage,
     content,
-  } satisfies Required<PostPayload> & { slug: string };
+  };
 }
 
-async function writePostFile(targetPath: string, payload: ReturnType<typeof normalizePostInput>) {
-  if (!payload) return;
+async function writePostFile(targetPath: string, payload: NormalizedPostInput) {
   const frontmatter = buildFrontmatter(payload, payload.slug);
   const fileContents = matter.stringify(payload.content, frontmatter);
   await fs.writeFile(targetPath, fileContents, 'utf8');
 }
+
+
 
 export async function POST(req: NextRequest) {
   const session = requireAdmin(req);
