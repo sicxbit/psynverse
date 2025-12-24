@@ -151,9 +151,9 @@ export default async function HomePage() {
       <section className="card p-6">
         <p className="text-sm uppercase tracking-[0.3em] text-midnight/60">Certifications</p>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm text-midnight/70">
-          <div className="rounded-xl bg-white/70 py-3">MSc Psychology</div>
+          <div className="rounded-xl bg-white/70 py-3">MSW in Medical and Psychiatry</div>
           <div className="rounded-xl bg-white/70 py-3">Psychiatric Social Work (PG)</div>
-          <div className="rounded-xl bg-white/70 py-3">Diploma in Counselling Psychology</div>
+          <div className="rounded-xl bg-white/70 py-3">PG Diploma in Counselling Psychology</div>
           <div className="rounded-xl bg-white/70 py-3">KAPS Professional Licence</div>
         </div>
       </section>
