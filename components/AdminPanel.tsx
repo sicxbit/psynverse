@@ -57,10 +57,17 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
 
   const saveBooks = async () => {
     setSaving(true);
+    const cleanedBooks = bookList.map((book) => ({
+      ...book,
+      title: book.title.trim(),
+      link: book.link.trim(),
+      author: book.author.trim(),
+      note: book.note?.trim() || '',
+    }));
     const res = await fetch('/api/admin/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ books: bookList }),
+      body: JSON.stringify({ books: cleanedBooks }),
     });
     setSaving(false);
     setMessage(res.ok ? 'Books updated.' : 'Failed to update books.');
@@ -382,9 +389,9 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
         <div className="space-y-4">
           {bookList.map((book, index) => (
             <div key={book.id} className="rounded-2xl bg-white/70 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-midnight/60">{book.id}</p>
-                <div className="flex gap-2">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-midnight/60 break-all">ID: {book.id}</p>
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => index > 0 && setBookList((prev) => moveItem(prev, index, index - 1))}
                     className="rounded-lg border px-3 py-1 text-sm"
@@ -401,18 +408,32 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   >
                     ↓
                   </button>
-                  <button onClick={() => deleteBook(index)} className="rounded-lg border px-3 py-1 text-sm text-red-600">
+                  <button
+                    onClick={() => deleteBook(index)}
+                    className="rounded-lg border px-3 py-1 text-sm text-red-600"
+                  >
                     Delete
                   </button>
+                  {book.link && (
+                    <a
+                      href={book.link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border px-3 py-1 text-sm font-semibold text-midnight hover:bg-white/70"
+                    >
+                      Open link
+                    </a>
+                  )}
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-3">
                 <label className="space-y-1">
-                  <span className="text-xs text-midnight/70">Title</span>
+                  <span className="text-xs text-midnight/70">Book name</span>
                   <input
                     value={book.title}
                     onChange={(e) => handleBookChange(index, 'title', e.target.value)}
                     className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
+                    placeholder="How the book appears on the site"
                   />
                 </label>
                 <label className="space-y-1">
@@ -424,11 +445,12 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   />
                 </label>
                 <label className="space-y-1">
-                  <span className="text-xs text-midnight/70">Link</span>
+                  <span className="text-xs text-midnight/70">Resource link</span>
                   <input
                     value={book.link}
                     onChange={(e) => handleBookChange(index, 'link', e.target.value)}
                     className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
+                    placeholder="https://example.com"
                   />
                 </label>
                 <label className="space-y-1">
