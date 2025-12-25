@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 export function AdminLogin() {
@@ -28,6 +29,11 @@ export function AdminLogin() {
 
   return (
     <form onSubmit={handleSubmit} className="card p-8 max-w-md mx-auto space-y-4">
+      <div className="flex justify-end">
+        <Link href="/" className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-white/70">
+          Home
+        </Link>
+      </div>
       <div className="space-y-2">
         <h1 className="font-serif text-2xl text-midnight">Admin Login</h1>
         <p className="text-sm text-midnight/70">Enter the credentials from your environment configuration.</p>
