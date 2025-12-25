@@ -64,6 +64,7 @@ const getUploadLabel = (status: UploadStatus, idleLabel: string) => {
 };
 
 export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
+  const resetTimers = useRef<number[]>([]);
   const [blogOrder, setBlogOrder] = useState(posts.map((p) => p.slug));
   const [postList, setPostList] = useState(posts);
   const [bookList, setBookList] = useState(books);
@@ -468,7 +469,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                         className="rounded-lg border px-3 py-1 text-sm font-semibold text-red-600"
                         disabled={postDeleting || postSaveStatus === 'saving'}
                       >
-                        Delete
+                        {getActionLabel(postDeleteStatus, 'Delete')}
                       </button>
                     </div>
                   </div>
