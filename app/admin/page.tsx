@@ -15,7 +15,7 @@ export default async function AdminPage() {
     );
   }
 
-  const [posts, books] = await Promise.all([getAllPosts(), getBooks()]);
+  const [posts, books] = await Promise.all([getAllPosts({ includeUnpublished: true }), getBooks()]);
   return (
     <main className="space-y-8">
       <AdminPanel posts={posts} books={books} />
