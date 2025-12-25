@@ -1,8 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Book, Post } from '../lib/content-shared';
 import { applyPostOrdering } from '../lib/content-shared';
+
+type ActionStatus = 'idle' | 'saving' | 'success' | 'error';
+type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+
+const STATUS_RESET_MS = 1500;
 
 function moveItem<T>(arr: T[], from: number, to: number) {
   const copy = [...arr];
@@ -11,14 +17,56 @@ function moveItem<T>(arr: T[], from: number, to: number) {
   return copy;
 }
 
+const setStatusWithReset = <T extends string>(
+  setter: Dispatch<SetStateAction<T>>,
+  status: T,
+  registerTimeout: (id: number) => void,
+) => {
+  setter(status);
+  if (status === 'success' || status === 'error') {
+    const timeoutId = window.setTimeout(() => setter('idle' as T), STATUS_RESET_MS);
+    registerTimeout(timeoutId);
+  }
+};
+
+const getActionLabel = (status: ActionStatus, idleLabel: string) => {
+  switch (status) {
+    case 'saving':
+      return 'Saving…';
+    case 'success':
+      return 'Saved ✓';
+    case 'error':
+      return 'Failed';
+    default:
+      return idleLabel;
+  }
+};
+
+const getUploadLabel = (status: UploadStatus, idleLabel: string) => {
+  switch (status) {
+    case 'uploading':
+      return 'Uploading…';
+    case 'success':
+      return 'Uploaded ✓';
+    case 'error':
+      return 'Upload failed';
+    default:
+      return idleLabel;
+  }
+};
+
 export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
+  const resetTimers = useRef<number[]>([]);
   const [blogOrder, setBlogOrder] = useState(posts.map((p) => p.slug));
   const [postList, setPostList] = useState(posts);
   const [bookList, setBookList] = useState(books);
   const [message, setMessage] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [booksSaving, setBooksSaving] = useState(false);
-  const [postSaving, setPostSaving] = useState(false);
+  const [blogOrderStatus, setBlogOrderStatus] = useState<ActionStatus>('idle');
+  const [booksSaveStatus, setBooksSaveStatus] = useState<ActionStatus>('idle');
+  const [postSaveStatus, setPostSaveStatus] = useState<ActionStatus>('idle');
+  const [postDeleteStatus, setPostDeleteStatus] = useState<ActionStatus>('idle');
+  const [postCoverUploadStatus, setPostCoverUploadStatus] = useState<UploadStatus>('idle');
+  const [bookUploadStatus, setBookUploadStatus] = useState<Record<string, UploadStatus>>({});
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [postForm, setPostForm] = useState({
     title: '',
@@ -31,6 +79,14 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   });
 
   const orderedPosts = useMemo(() => applyPostOrdering(postList, blogOrder), [postList, blogOrder]);
+  const bookUploadState = (bookId: string) => bookUploadStatus[bookId] || 'idle';
+  const registerTimeout = (id: number) => resetTimers.current.push(id);
+
+  useEffect(() => {
+    return () => {
+      resetTimers.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    };
+  }, []);
 
   const resetPostForm = () => {
     setEditingSlug(null);
@@ -46,16 +102,17 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   };
 
   const saveBlogOrder = async () => {
-    setSaving(true);
+    setMessage('');
+    setStatusWithReset(setBlogOrderStatus, 'saving', registerTimeout);
     const res = await fetch('/api/admin/save-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ blogOrder }),
     });
-    setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to save order.');
+      setStatusWithReset(setBlogOrderStatus, 'error', registerTimeout);
       return;
     }
     const data = await res.json().catch(() => ({}));
@@ -63,10 +120,12 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       setBlogOrder(data.blogOrder);
     }
     setMessage('Blog order saved.');
+    setStatusWithReset(setBlogOrderStatus, 'success', registerTimeout);
   };
 
   const saveBooks = async () => {
-    setBooksSaving(true);
+    setMessage('');
+    setStatusWithReset(setBooksSaveStatus, 'saving', registerTimeout);
     const cleanedBooks = bookList.map((book) => ({
       ...book,
       title: book.title.trim(),
@@ -80,13 +139,14 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ books: cleanedBooks }),
     });
-    setBooksSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to update books.');
+      setStatusWithReset(setBooksSaveStatus, 'error', registerTimeout);
       return;
     }
     setMessage('Books updated.');
+    setStatusWithReset(setBooksSaveStatus, 'success', registerTimeout);
   };
 
   const handleBookChange = (index: number, field: keyof Book, value: string) => {
@@ -132,8 +192,8 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   };
 
   const savePost = async () => {
-    setPostSaving(true);
     setMessage('');
+    setStatusWithReset(setPostSaveStatus, 'saving', registerTimeout);
     const payload = {
       post: postForm,
       ...(editingSlug ? { originalSlug: editingSlug } : {}),
@@ -143,10 +203,10 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    setPostSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to save post.');
+      setStatusWithReset(setPostSaveStatus, 'error', registerTimeout);
       return;
     }
     const data = await res.json();
@@ -158,21 +218,22 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       setBlogOrder(data.blogOrder);
     }
     setMessage(editingSlug ? 'Post updated.' : 'Post created.');
+    setStatusWithReset(setPostSaveStatus, 'success', registerTimeout);
     resetPostForm();
   };
 
   const deletePost = async (slug: string) => {
-    setPostSaving(true);
     setMessage('');
+    setStatusWithReset(setPostDeleteStatus, 'saving', registerTimeout);
     const res = await fetch('/api/admin/posts', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug }),
     });
-    setPostSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to delete post.');
+      setStatusWithReset(setPostDeleteStatus, 'error', registerTimeout);
       return;
     }
     const data = await res.json();
@@ -186,11 +247,77 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       resetPostForm();
     }
     setMessage('Post deleted.');
+    setStatusWithReset(setPostDeleteStatus, 'success', registerTimeout);
   };
 
   const logout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
     window.location.reload();
+  };
+
+  const uploadPostCover = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setMessage('');
+    setStatusWithReset(setPostCoverUploadStatus, 'uploading', registerTimeout);
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.message || 'Failed to upload cover image.');
+      setStatusWithReset(setPostCoverUploadStatus, 'error', registerTimeout);
+      event.target.value = '';
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (data.secure_url) {
+      setPostForm((prev) => ({ ...prev, coverImage: data.secure_url }));
+    }
+    setMessage('Cover image uploaded.');
+    setStatusWithReset(setPostCoverUploadStatus, 'success', registerTimeout);
+    event.target.value = '';
+  };
+
+  const updateBookUploadStatus = (bookId: string, status: UploadStatus) => {
+    setBookUploadStatus((prev) => ({ ...prev, [bookId]: status }));
+    if (status === 'success' || status === 'error') {
+      const timeoutId = window.setTimeout(() => {
+        setBookUploadStatus((prev) => {
+          if (prev[bookId] !== status) return prev;
+          return { ...prev, [bookId]: 'idle' };
+        });
+      }, STATUS_RESET_MS);
+      registerTimeout(timeoutId);
+    }
+  };
+
+  const uploadBookImage = async (bookId: string, file: File) => {
+    setMessage('');
+    updateBookUploadStatus(bookId, 'uploading');
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.message || 'Failed to upload book image.');
+      updateBookUploadStatus(bookId, 'error');
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (data.secure_url) {
+      setBookList((prev) =>
+        prev.map((book) => (book.id === bookId ? { ...book, image: data.secure_url } : book)),
+      );
+    }
+    setMessage('Book image uploaded.');
+    updateBookUploadStatus(bookId, 'success');
   };
 
   return (
@@ -216,10 +343,10 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
             </button>
             <button
               onClick={savePost}
-              className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90"
-              disabled={postSaving}
+              className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={postSaveStatus === 'saving'}
             >
-              {editingSlug ? 'Update post' : 'Create post'}
+              {getActionLabel(postSaveStatus, editingSlug ? 'Update post' : 'Create post')}
             </button>
           </div>
         </div>
@@ -289,6 +416,23 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
                 />
               </label>
+              <div className="flex items-center gap-2">
+                <label
+                  className={`rounded-lg border px-3 py-1 text-sm font-semibold text-midnight hover:bg-white/70 cursor-pointer ${
+                    postCoverUploadStatus === 'uploading' ? 'opacity-60 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={uploadPostCover}
+                    disabled={postCoverUploadStatus === 'uploading'}
+                  />
+                  {getUploadLabel(postCoverUploadStatus, 'Upload cover image')}
+                </label>
+                <p className="text-xs text-midnight/70">Upload to Cloudinary to fill the cover URL automatically.</p>
+              </div>
               <label className="space-y-1">
                 <span className="text-xs text-midnight/70">Content (Markdown)</span>
                 <textarea
@@ -320,10 +464,10 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                       </button>
                       <button
                         onClick={() => deletePost(post.slug)}
-                        className="rounded-lg border px-3 py-1 text-sm font-semibold text-red-600"
-                        disabled={postSaving}
+                        className="rounded-lg border px-3 py-1 text-sm font-semibold text-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={postDeleteStatus === 'saving' || postSaveStatus === 'saving'}
                       >
-                        Delete
+                        {getActionLabel(postDeleteStatus, 'Delete')}
                       </button>
                     </div>
                   </div>
@@ -343,11 +487,11 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
           <h2 className="font-serif text-2xl text-midnight">Blog ordering</h2>
           <button
             onClick={saveBlogOrder}
-            className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90"
-              disabled={saving}
-            >
-              {saving ? 'Saving…' : 'Save order'}
-            </button>
+            className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90 disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={blogOrderStatus === 'saving'}
+          >
+            {getActionLabel(blogOrderStatus, 'Save order')}
+          </button>
         </div>
         <ul className="space-y-3">
           {blogOrder.map((slug, index) => {
@@ -395,10 +539,10 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
             </button>
             <button
               onClick={saveBooks}
-              className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90"
-              disabled={booksSaving}
+              className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={booksSaveStatus === 'saving'}
             >
-              {booksSaving ? 'Saving…' : 'Save books'}
+              {getActionLabel(booksSaveStatus, 'Save books')}
             </button>
           </div>
         </div>
@@ -486,6 +630,28 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                     className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
                   />
                 </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  className={`rounded-lg border px-3 py-1 text-sm font-semibold text-midnight hover:bg-white/70 cursor-pointer ${
+                    bookUploadState(book.id) === 'uploading' ? 'opacity-60 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      uploadBookImage(book.id, file);
+                      e.target.value = '';
+                    }}
+                    disabled={bookUploadState(book.id) === 'uploading'}
+                  />
+                  {getUploadLabel(bookUploadState(book.id), 'Upload image')}
+                </label>
+                <p className="text-xs text-midnight/70">Upload a cover to populate the image URL automatically.</p>
               </div>
             </div>
           ))}
