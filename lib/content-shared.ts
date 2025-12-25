@@ -11,6 +11,9 @@ export type Post = PostFrontmatter & {
   content: string;
   readingMinutes: number;
   headings: { depth: number; value: string; slug: string }[];
+  published?: boolean;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 };
 
 export type Book = {
