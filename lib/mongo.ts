@@ -23,11 +23,40 @@ function requireMongoUri(): string {
     throw new Error(`❌ MONGODB_URI must start with mongodb:// or mongodb+srv:// (got: ${v})`);
   }
 
-  // SRV-specific validation
-  if (v.startsWith("mongodb+srv://") && !v.includes(".mongodb.net")) {
+  // Detect accidental unescaped @ inside credentials (e.g. password containing @)
+  const atCount = (v.match(/@/g) || []).length;
+  if (atCount > 1) {
     throw new Error(
-      `❌ Invalid MongoDB SRV host. Expected *.mongodb.net but got: ${v}`
+      "❌ MONGODB_URI contains multiple '@' characters. URL-encode credentials (replace @ with %40, etc.)."
     );
+  }
+
+  // Parse host(s) to catch numeric/port fallbacks early
+  const hostMatch = v.match(/^mongodb(\+srv)?:\/\/(?:[^@/]+@)?([^/?]+)/);
+  if (!hostMatch) {
+    throw new Error(`❌ Unable to parse MONGODB_URI host from: ${v}`);
+  }
+  const isSrv = !!hostMatch[1];
+  const hosts = hostMatch[2].split(",");
+
+  for (const host of hosts) {
+    const [hostname, port] = host.split(":");
+    if (!hostname || /^\d+$/.test(hostname)) {
+      throw new Error(
+        `❌ MONGODB_URI host looks like a port fallback (${hostname || "<empty>"}). Check your environment.`
+      );
+    }
+
+    if (isSrv) {
+      if (port) {
+        throw new Error("❌ mongodb+srv:// URIs must not include an explicit port.");
+      }
+      if (!hostname.endsWith(".mongodb.net")) {
+        throw new Error(
+          `❌ Invalid MongoDB SRV host. Expected *.mongodb.net but got: ${hostname}`
+        );
+      }
+    }
   }
 
   // Guard against PORT / numeric fallback bugs (your current issue)
