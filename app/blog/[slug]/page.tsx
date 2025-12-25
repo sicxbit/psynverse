@@ -2,10 +2,11 @@ import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
-import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import Link from 'next/link';
 import { getAllPosts, getPostBySlug } from '../../../lib/content';
+import { HomeLogoLink } from '../../../components/HomeLogoLink';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -32,7 +33,8 @@ export default async function BlogDetail({ params }: { params: { slug: string } 
   const next = index < allPosts.length - 1 ? allPosts[index + 1] : null;
 
   return (
-    <main className="space-y-6">
+    <main className="relative space-y-6 pt-4">
+      <HomeLogoLink className="absolute right-0 top-0" />
       <div className="space-y-2">
         <p className="text-sm text-midnight/60">{format(new Date(post.date), 'PPP')} • {post.readingMinutes} min read</p>
         <h1 className="font-serif text-4xl text-midnight">{post.title}</h1>
