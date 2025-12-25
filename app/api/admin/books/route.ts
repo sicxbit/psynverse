@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../lib/auth';
 import type { Book } from '../../../../lib/content-shared';
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest) {
 
   try {
     await saveBooksToDb(cleaned);
+    revalidatePath('/');
+    revalidatePath('/books');
   } catch (err: any) {
     return NextResponse.json({ message: err?.message || 'Failed to save books' }, { status: 500 });
   }

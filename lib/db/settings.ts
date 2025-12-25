@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { getDb } from '../mongo';
 
 const SETTINGS_ID = 'site';
@@ -15,6 +16,8 @@ const DEFAULT_SETTINGS: SettingsDoc = {
 };
 
 export async function getSettings(): Promise<SettingsDoc> {
+  noStore();
+
   const db = await getDb();
   const doc = await db.collection<SettingsDoc>('settings').findOne({ _id: SETTINGS_ID });
   if (!doc) {
