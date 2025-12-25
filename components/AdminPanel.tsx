@@ -85,6 +85,11 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     content: '',
   });
 
+  const readErrorMessage = async (res: Response, fallback: string) => {
+    const data = await res.json().catch(() => ({}));
+    return data?.message || fallback;
+  };
+
   const orderedPosts = useMemo(() => applyPostOrdering(postList, blogOrder), [postList, blogOrder]);
   const bookUploadState = (bookId: string) => bookUploadStatus[bookId] || 'idle';
 
@@ -104,23 +109,29 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   const saveBlogOrder = async () => {
     setMessage('');
     setActionStatusWithReset(setBlogOrderStatus, 'saving');
-    const res = await fetch('/api/admin/save-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ blogOrder }),
-    });
-    if (!res.ok) {
+    try {
+      const res = await fetch('/api/admin/save-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ blogOrder }),
+      });
+      if (!res.ok) {
+        const message = await readErrorMessage(res, 'Failed to save order.');
+        setMessage(message);
+        setActionStatusWithReset(setBlogOrderStatus, 'error');
+        return;
+      }
       const data = await res.json().catch(() => ({}));
-      setMessage(data.message || 'Failed to save order.');
+      if (Array.isArray(data.blogOrder)) {
+        setBlogOrder(data.blogOrder);
+      }
+      setMessage('Blog order saved.');
+      setActionStatusWithReset(setBlogOrderStatus, 'success');
+    } catch (error: any) {
+      setMessage(error?.message || 'Failed to save order.');
       setActionStatusWithReset(setBlogOrderStatus, 'error');
-      return;
     }
-    const data = await res.json().catch(() => ({}));
-    if (Array.isArray(data.blogOrder)) {
-      setBlogOrder(data.blogOrder);
-    }
-    setMessage('Blog order saved.');
-    setActionStatusWithReset(setBlogOrderStatus, 'success');
   };
 
   const saveBooks = async () => {
@@ -134,19 +145,25 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       image: book.image?.trim() || '',
       note: book.note?.trim() || '',
     }));
-    const res = await fetch('/api/admin/books', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ books: cleanedBooks }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setMessage(data.message || 'Failed to update books.');
+    try {
+      const res = await fetch('/api/admin/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ books: cleanedBooks }),
+      });
+      if (!res.ok) {
+        const message = await readErrorMessage(res, 'Failed to update books.');
+        setMessage(message);
+        setActionStatusWithReset(setBooksSaveStatus, 'error');
+        return;
+      }
+      setMessage('Books updated.');
+      setActionStatusWithReset(setBooksSaveStatus, 'success');
+    } catch (error: any) {
+      setMessage(error?.message || 'Failed to update books.');
       setActionStatusWithReset(setBooksSaveStatus, 'error');
-      return;
     }
-    setMessage('Books updated.');
-    setActionStatusWithReset(setBooksSaveStatus, 'success');
   };
 
   const handleBookChange = (index: number, field: keyof Book, value: string) => {
@@ -198,60 +215,72 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       post: postForm,
       ...(editingSlug ? { originalSlug: editingSlug } : {}),
     };
-    const res = await fetch('/api/admin/posts', {
-      method: editingSlug ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setMessage(data.message || 'Failed to save post.');
+    try {
+      const res = await fetch('/api/admin/posts', {
+        method: editingSlug ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const message = await readErrorMessage(res, 'Failed to save post.');
+        setMessage(message);
+        setActionStatusWithReset(setPostSaveStatus, 'error');
+        return;
+      }
+      const data = await res.json();
+      if (data.post) {
+        const updatedList = [data.post, ...postList.filter((p) => p.slug !== (editingSlug || data.post.slug))];
+        setPostList(updatedList);
+      }
+      if (data.blogOrder) {
+        setBlogOrder(data.blogOrder);
+      }
+      setMessage(editingSlug ? 'Post updated.' : 'Post created.');
+      setActionStatusWithReset(setPostSaveStatus, 'success');
+      resetPostForm();
+    } catch (error: any) {
+      setMessage(error?.message || 'Failed to save post.');
       setActionStatusWithReset(setPostSaveStatus, 'error');
-      return;
     }
-    const data = await res.json();
-    if (data.post) {
-      const updatedList = [data.post, ...postList.filter((p) => p.slug !== (editingSlug || data.post.slug))];
-      setPostList(updatedList);
-    }
-    if (data.blogOrder) {
-      setBlogOrder(data.blogOrder);
-    }
-    setMessage(editingSlug ? 'Post updated.' : 'Post created.');
-    setActionStatusWithReset(setPostSaveStatus, 'success');
-    resetPostForm();
   };
 
   const deletePost = async (slug: string) => {
     setMessage('');
     setPostDeleting(true);
-    const res = await fetch('/api/admin/posts', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setMessage(data.message || 'Failed to delete post.');
+    try {
+      const res = await fetch('/api/admin/posts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ slug }),
+      });
+      if (!res.ok) {
+        const message = await readErrorMessage(res, 'Failed to delete post.');
+        setMessage(message);
+        setPostDeleting(false);
+        return;
+      }
+      const data = await res.json();
+      setPostList((prev) => prev.filter((p) => p.slug !== slug));
+      if (data.blogOrder) {
+        setBlogOrder(data.blogOrder);
+      } else {
+        setBlogOrder((prev) => prev.filter((entry) => entry !== slug));
+      }
+      if (editingSlug === slug) {
+        resetPostForm();
+      }
+      setMessage('Post deleted.');
       setPostDeleting(false);
-      return;
+    } catch (error: any) {
+      setMessage(error?.message || 'Failed to delete post.');
+      setPostDeleting(false);
     }
-    const data = await res.json();
-    setPostList((prev) => prev.filter((p) => p.slug !== slug));
-    if (data.blogOrder) {
-      setBlogOrder(data.blogOrder);
-    } else {
-      setBlogOrder((prev) => prev.filter((entry) => entry !== slug));
-    }
-    if (editingSlug === slug) {
-      resetPostForm();
-    }
-    setMessage('Post deleted.');
-    setPostDeleting(false);
   };
 
   const logout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' });
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
     window.location.reload();
   };
 
@@ -264,6 +293,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     formData.append('file', file);
     const res = await fetch('/api/admin/upload?folder=blog', {
       method: 'POST',
+      credentials: 'include',
       body: formData,
     });
     if (!res.ok) {
@@ -298,6 +328,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     const res = await fetch(`/api/admin/books/${bookId}/image`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ image: imageUrl }),
     });
     const data = await res.json().catch(() => ({}));
@@ -314,6 +345,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     formData.append('file', file);
     const res = await fetch('/api/admin/upload?folder=books', {
       method: 'POST',
+      credentials: 'include',
       body: formData,
     });
     if (!res.ok) {
