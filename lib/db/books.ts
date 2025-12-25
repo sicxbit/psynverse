@@ -65,3 +65,10 @@ export async function saveBooks(books: Book[]): Promise<void> {
 
   await setBookOrder(normalized.map((b) => b._id));
 }
+
+export async function updateBookImage(id: string, image: string): Promise<void> {
+  const db = await getDb();
+  await db
+    .collection<BookDoc>('books')
+    .updateOne({ _id: id }, { $set: { image, updatedAt: new Date() } }, { upsert: true });
+}
