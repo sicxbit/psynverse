@@ -9,7 +9,7 @@ export default async function AdminPage() {
   if (!session) {
     return (
       <main className="min-h-screen flex items-center justify-center relative">
-        <HomeLogoLink className="absolute right-6 top-6" />
+        <HomeLogoLink className="fixed right-6 top-6" />
         <AdminLogin />
       </main>
     );
