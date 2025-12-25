@@ -2,10 +2,11 @@ import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
-import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import Link from 'next/link';
 import { getAllPosts, getPostBySlug } from '../../../lib/content';
+import { HomeLogoLink } from '../../../components/HomeLogoLink';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
