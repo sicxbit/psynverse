@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import type { Book } from '../content-shared';
 import { getDb } from '../mongo';
 import { getSettings, setBookOrder } from './settings';
@@ -21,6 +22,8 @@ function normalizeBook(input: Book): BookDoc {
 }
 
 export async function getBooks(): Promise<Book[]> {
+  noStore();
+
   const db = await getDb();
   const [settings, books] = await Promise.all([
     getSettings(),

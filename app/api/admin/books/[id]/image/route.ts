@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../../lib/auth';
 import { updateBookImage } from '../../../../../../lib/db/books';
@@ -34,6 +35,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id?: strin
 
   try {
     await updateBookImage(id, image);
+    revalidatePath('/');
+    revalidatePath('/books');
   } catch (error: any) {
     return NextResponse.json({ message: error?.message || 'Failed to update book image' }, { status: 500 });
   }
