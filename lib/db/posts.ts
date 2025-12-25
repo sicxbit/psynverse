@@ -32,6 +32,14 @@ export type PostInput = {
   published?: boolean;
 };
 
+type HttpError = Error & { status?: number };
+
+function httpError(status: number, message: string): HttpError {
+  const err = new Error(message) as HttpError;
+  err.status = status;
+  return err;
+}
+
 export function sanitizeSlug(value: string) {
   return value
     .toLowerCase()
@@ -53,8 +61,12 @@ function normalizeTags(tags?: string[] | string) {
     .filter(Boolean);
 }
 
+function validateDate(date: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date);
+}
+
 function normalizePostInput(post?: PostInput) {
-  if (!post) return null;
+  if (!post) throw httpError(400, 'Invalid payload');
 
   const title = String(post.title || '').trim();
   const date = String(post.date || '').trim();
@@ -62,7 +74,13 @@ function normalizePostInput(post?: PostInput) {
   const content = String(post.content || '').trim();
   const slugSource = sanitizeSlug(String(post.slug || title));
 
-  if (!title || !date || !excerpt || !slugSource) return null;
+  if (!title || !date || !excerpt || !slugSource) {
+    throw httpError(400, 'Missing required fields');
+  }
+
+  if (!validateDate(date)) {
+    throw httpError(400, 'Date must be in YYYY-MM-DD format');
+  }
 
   const cover = String(post.coverImage || '').trim();
 
@@ -138,9 +156,6 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 
 export async function upsertPost(payload: PostInput, originalSlug?: string): Promise<Post> {
   const normalized = normalizePostInput(payload);
-  if (!normalized) {
-    throw new Error('Invalid payload');
-  }
 
   const db = await getDb();
   const collection = db.collection<PostDoc>('posts');
@@ -151,18 +166,12 @@ export async function upsertPost(payload: PostInput, originalSlug?: string): Pro
 
   const existingTarget = await collection.findOne({ _id: targetSlug });
   if (existingTarget && currentSlug !== targetSlug) {
-    const err = new Error('A post with this slug already exists.');
-    // @ts-expect-error attach status for API handler
-    err.status = 409;
-    throw err;
+    throw httpError(409, 'A post with this slug already exists.');
   }
 
   const existingCurrent = await collection.findOne({ _id: currentSlug });
   if (currentSlug && currentSlug !== targetSlug && !existingCurrent) {
-    const err = new Error('Post not found');
-    // @ts-expect-error attach status for API handler
-    err.status = 404;
-    throw err;
+    throw httpError(404, 'Post not found');
   }
 
   const doc: PostDoc = {
@@ -187,7 +196,7 @@ export async function upsertPost(payload: PostInput, originalSlug?: string): Pro
 
   const saved = await collection.findOne({ _id: targetSlug });
   if (!saved) {
-    throw new Error('Failed to save post');
+    throw httpError(500, 'Failed to save post');
   }
 
   return mapDocToPost(saved);
@@ -196,18 +205,12 @@ export async function upsertPost(payload: PostInput, originalSlug?: string): Pro
 export async function deletePost(slug: string) {
   const sanitized = sanitizeSlug(slug);
   if (!sanitized) {
-    const err = new Error('Invalid slug');
-    // @ts-expect-error attach status for API handler
-    err.status = 400;
-    throw err;
+    throw httpError(400, 'Invalid slug');
   }
 
   const db = await getDb();
   const result = await db.collection<PostDoc>('posts').deleteOne({ _id: sanitized });
   if (result.deletedCount === 0) {
-    const err = new Error('Post not found');
-    // @ts-expect-error attach status for API handler
-    err.status = 404;
-    throw err;
+    throw httpError(404, 'Post not found');
   }
 }
