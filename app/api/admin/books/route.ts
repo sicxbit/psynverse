@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../lib/auth';
-import { resolveContentPath, writeJsonAtomic } from '../../../../lib/fs-utils';
-import fs from 'fs/promises';
 import type { Book } from '../../../../lib/content-shared';
+import { saveBooks as saveBooksToDb } from '../../../../lib/db/books';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   const session = requireAdmin(req);
@@ -26,19 +26,11 @@ export async function POST(req: NextRequest) {
     note: book.note ? String(book.note).trim() : '',
   }));
 
-  const booksPath = resolveContentPath('books.json');
-  await writeJsonAtomic(booksPath, cleaned);
-
-  const settingsPath = resolveContentPath('site-settings.json');
-  let settings = { blogOrder: [] as string[], bookOrder: [] as string[] };
   try {
-    const raw = await fs.readFile(settingsPath, 'utf8');
-    settings = JSON.parse(raw);
-  } catch {
-    // defaults
+    await saveBooksToDb(cleaned);
+  } catch (err: any) {
+    return NextResponse.json({ message: err?.message || 'Failed to save books' }, { status: 500 });
   }
-  settings.bookOrder = cleaned.map((b) => b.id);
-  await writeJsonAtomic(settingsPath, settings);
 
   return NextResponse.json({ ok: true });
 }

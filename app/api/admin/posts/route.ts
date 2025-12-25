@@ -3,11 +3,13 @@ import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 import { requireAdmin } from '../../../../lib/auth';
-import { resolveContentPath, writeJsonAtomic } from '../../../../lib/fs-utils';
+import { resolveContentPath } from '../../../../lib/fs-utils';
 import { getPostBySlug } from '../../../../lib/content';
 import type { PostFrontmatter, SiteSettings } from '../../../../lib/content-shared';
+import { getSettings, setBlogOrder } from '../../../../lib/db/settings';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 type PostPayload = {
   title?: string;
@@ -31,7 +33,6 @@ type NormalizedPostInput = {
 
 
 const BLOG_DIR = resolveContentPath('blog');
-const SETTINGS_PATH = resolveContentPath('site-settings.json');
 
 function sanitizeSlug(value: string) {
   return value
@@ -75,22 +76,9 @@ async function findExistingPath(slug: string) {
   return null;
 }
 
-async function readSettings(): Promise<SiteSettings> {
-  try {
-    const raw = await fs.readFile(SETTINGS_PATH, 'utf8');
-    return JSON.parse(raw) as SiteSettings;
-  } catch {
-    return { blogOrder: [], bookOrder: [] } satisfies SiteSettings;
-  }
-}
-
-async function saveSettings(settings: SiteSettings) {
-  await writeJsonAtomic(SETTINGS_PATH, settings);
-}
-
 async function updateBlogOrder(slug: string, previousSlug?: string) {
-  const settings = await readSettings();
-  const baseOrder = settings.blogOrder;
+  const settings = await getSettings();
+  const baseOrder = settings.blogOrder || [];
   const targetSlug = previousSlug || slug;
   const existingIndex = baseOrder.findIndex((entry) => entry === targetSlug || entry === slug);
   const filtered = baseOrder.filter((entry) => entry !== slug && entry !== previousSlug);
@@ -99,16 +87,15 @@ async function updateBlogOrder(slug: string, previousSlug?: string) {
   } else {
     filtered.unshift(slug);
   }
-  settings.blogOrder = filtered;
-  await saveSettings(settings);
-  return settings.blogOrder;
+  await setBlogOrder(filtered);
+  return filtered;
 }
 
 async function removeFromBlogOrder(slug: string) {
-  const settings = await readSettings();
-  settings.blogOrder = settings.blogOrder.filter((entry) => entry !== slug);
-  await saveSettings(settings);
-  return settings.blogOrder;
+  const settings = await getSettings();
+  const updated = (settings.blogOrder || []).filter((entry) => entry !== slug);
+  await setBlogOrder(updated);
+  return updated;
 }
 
 
