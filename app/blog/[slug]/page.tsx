@@ -9,6 +9,8 @@ import { getAllPosts, getPostBySlug } from '../../../lib/content';
 import { HomeLogoLink } from '../../../components/HomeLogoLink';
 import type { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = await getPostBySlug(params.slug);
   if (!post) return { title: 'Post not found • Psynverse' };
@@ -18,14 +20,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export async function generateStaticParams() {
-  const posts = await getAllPosts();
-  return posts.map((post) => ({ slug: post.slug }));
-}
-
 export default async function BlogDetail({ params }: { params: { slug: string } }) {
   const post = await getPostBySlug(params.slug);
-  if (!post) return notFound();
+  if (!post || post.published === false) return notFound();
 
   const allPosts = await getAllPosts();
   const index = allPosts.findIndex((p) => p.slug === post.slug);

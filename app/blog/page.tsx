@@ -1,8 +1,9 @@
-import Link from 'next/link';
 import { Suspense } from 'react';
 import { HomeLogoLink } from '../../components/HomeLogoLink';
 import { getAllPosts } from '../../lib/content';
 import { BlogList } from './sections/BlogList';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Journal • Psynverse',
