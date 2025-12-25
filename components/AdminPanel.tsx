@@ -50,12 +50,12 @@ const getActionLabel = (status: ActionStatus, idleLabel: string) => {
   }
 };
 
-const getUploadLabel = (status: UploadStatus, idleLabel: string) => {
+const getUploadLabel = (status: UploadStatus, idleLabel: string, successLabel = 'Uploaded ✓') => {
   switch (status) {
     case 'uploading':
       return 'Uploading…';
     case 'success':
-      return 'Uploaded ✓';
+      return successLabel;
     case 'error':
       return 'Upload failed';
     default:
@@ -294,6 +294,19 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     }
   };
 
+  const persistBookImage = async (bookId: string, imageUrl: string) => {
+    const res = await fetch(`/api/admin/books/${bookId}/image`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageUrl }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.ok !== true) {
+      throw new Error(data?.message || 'Failed to save book image.');
+    }
+    return data;
+  };
+
   const uploadBookImage = async (bookId: string, index: number, file: File) => {
     setMessage('');
     updateBookUploadStatus(bookId, 'uploading');
@@ -310,15 +323,25 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       return;
     }
     const data = await res.json().catch(() => ({}));
-    if (data.secure_url) {
-      setBookList((prev) => {
-        const copy = [...prev];
-        copy[index] = { ...copy[index], image: data.secure_url };
-        return copy;
-      });
+    const secureUrl = data.secure_url || data.url;
+    if (!secureUrl) {
+      setMessage('Failed to upload book image.');
+      updateBookUploadStatus(bookId, 'error');
+      return;
     }
-    setMessage('Book image uploaded.');
-    updateBookUploadStatus(bookId, 'success');
+    setBookList((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], image: secureUrl };
+      return copy;
+    });
+    try {
+      await persistBookImage(bookId, secureUrl);
+      setMessage('Book image saved.');
+      updateBookUploadStatus(bookId, 'success');
+    } catch (error: any) {
+      setMessage(error?.message || 'Failed to save book image.');
+      updateBookUploadStatus(bookId, 'error');
+    }
   };
 
   return (
@@ -650,7 +673,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                     }}
                     disabled={bookUploadState(book.id) === 'uploading'}
                   />
-                  {getUploadLabel(bookUploadState(book.id), 'Upload image')}
+                  {getUploadLabel(bookUploadState(book.id), 'Upload image', 'Saved ✓')}
                 </label>
                 <p className="text-xs text-midnight/70">Upload a cover to populate the image URL automatically.</p>
               </div>
