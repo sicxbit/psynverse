@@ -12,6 +12,14 @@ function toErrorResponse(error: any, fallback: string, status = 500) {
   return NextResponse.json({ message }, { status: code });
 }
 
+async function parseJson(req: NextRequest) {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+
 async function updateBlogOrderAfterSave(slug: string, previousSlug?: string) {
   const targetSlug = sanitizeSlug(slug);
   const prevSlug = previousSlug ? sanitizeSlug(previousSlug) : targetSlug;
@@ -42,7 +50,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { post } = await req.json();
+  const body = await parseJson(req);
+  if (!body || typeof body !== 'object' || !body.post) {
+    return NextResponse.json({ message: 'Invalid payload' }, { status: 400 });
+  }
+
+  const { post } = body;
   try {
     const savedPost = await upsertPost(post);
     const blogOrder = await updateBlogOrderAfterSave(savedPost.slug);
@@ -58,12 +71,27 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { post, originalSlug } = await req.json();
+  const body = await parseJson(req);
+  if (!body || typeof body !== 'object' || !body.post) {
+    return NextResponse.json({ message: 'Invalid payload' }, { status: 400 });
+  }
+
+  const { post, originalSlug } = body;
   const safeOriginalSlug = originalSlug ? sanitizeSlug(String(originalSlug)) : undefined;
+  const lookupSlug = safeOriginalSlug || sanitizeSlug(String(post?.slug || post?.title || ''));
+
+  if (!lookupSlug) {
+    return NextResponse.json({ message: 'Missing slug to update' }, { status: 400 });
+  }
+
+  const existing = await getPostBySlug(lookupSlug);
+  if (!existing) {
+    return NextResponse.json({ message: 'Post not found' }, { status: 404 });
+  }
 
   try {
-    const savedPost = await upsertPost(post, safeOriginalSlug);
-    const blogOrder = await updateBlogOrderAfterSave(savedPost.slug, safeOriginalSlug);
+    const savedPost = await upsertPost(post, safeOriginalSlug || existing.slug);
+    const blogOrder = await updateBlogOrderAfterSave(savedPost.slug, safeOriginalSlug || existing.slug);
     return NextResponse.json({ ok: true, post: savedPost, blogOrder });
   } catch (error: any) {
     return toErrorResponse(error, 'Failed to update post', error?.status || 500);
@@ -76,7 +104,8 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { slug } = await req.json();
+  const body = await parseJson(req);
+  const slug = body?.slug;
   const sanitized = sanitizeSlug(String(slug || ''));
   if (!sanitized) {
     return NextResponse.json({ message: 'Invalid slug' }, { status: 400 });
