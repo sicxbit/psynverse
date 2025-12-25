@@ -17,6 +17,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   const [bookList, setBookList] = useState(books);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [booksSaving, setBooksSaving] = useState(false);
   const [postSaving, setPostSaving] = useState(false);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [postForm, setPostForm] = useState({
@@ -52,16 +53,26 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       body: JSON.stringify({ blogOrder }),
     });
     setSaving(false);
-    setMessage(res.ok ? 'Blog order saved.' : 'Failed to save order.');
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.message || 'Failed to save order.');
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (Array.isArray(data.blogOrder)) {
+      setBlogOrder(data.blogOrder);
+    }
+    setMessage('Blog order saved.');
   };
 
   const saveBooks = async () => {
-    setSaving(true);
+    setBooksSaving(true);
     const cleanedBooks = bookList.map((book) => ({
       ...book,
       title: book.title.trim(),
       link: book.link.trim(),
       author: book.author.trim(),
+      image: book.image?.trim() || '',
       note: book.note?.trim() || '',
     }));
     const res = await fetch('/api/admin/books', {
@@ -69,8 +80,13 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ books: cleanedBooks }),
     });
-    setSaving(false);
-    setMessage(res.ok ? 'Books updated.' : 'Failed to update books.');
+    setBooksSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.message || 'Failed to update books.');
+      return;
+    }
+    setMessage('Books updated.');
   };
 
   const handleBookChange = (index: number, field: keyof Book, value: string) => {
@@ -328,10 +344,10 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
           <button
             onClick={saveBlogOrder}
             className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90"
-            disabled={saving}
-          >
-            Save order
-          </button>
+              disabled={saving}
+            >
+              {saving ? 'Saving…' : 'Save order'}
+            </button>
         </div>
         <ul className="space-y-3">
           {blogOrder.map((slug, index) => {
@@ -380,9 +396,9 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
             <button
               onClick={saveBooks}
               className="rounded-xl bg-midnight text-white px-4 py-2 text-sm font-semibold hover:bg-midnight/90"
-              disabled={saving}
+              disabled={booksSaving}
             >
-              Save books
+              {booksSaving ? 'Saving…' : 'Save books'}
             </button>
           </div>
         </div>

@@ -7,17 +7,9 @@ import remarkGfm from 'remark-gfm';
 import { visit } from 'unist-util-visit';
 import { BRAND } from './constants';
 import { resolveContentPath } from './fs-utils';
-import { applyPostOrdering, type Book, type Post, type PostFrontmatter, type SiteSettings } from './content-shared';
-
-async function ensureSiteSettings(): Promise<SiteSettings> {
-  const settingsPath = resolveContentPath('site-settings.json');
-  try {
-    const raw = await fs.readFile(settingsPath, 'utf8');
-    return JSON.parse(raw) as SiteSettings;
-  } catch (err) {
-    return { blogOrder: [], bookOrder: [] };
-  }
-}
+import { applyPostOrdering, type Book, type Post, type PostFrontmatter } from './content-shared';
+import { getSettings } from './db/settings';
+import { getBooks as getBooksFromDb } from './db/books';
 
 export async function getAllPosts(): Promise<Post[]> {
   const blogDir = resolveContentPath('blog');
@@ -59,7 +51,7 @@ export async function getAllPosts(): Promise<Post[]> {
     });
   }
 
-  const settings = await ensureSiteSettings();
+  const settings = await getSettings();
   return applyPostOrdering(posts, settings.blogOrder);
 }
 
@@ -69,24 +61,12 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 }
 
 export async function getBooks(): Promise<Book[]> {
-  const filePath = resolveContentPath('books.json');
-  const settings = await ensureSiteSettings();
-  try {
-    const raw = await fs.readFile(filePath, 'utf8');
-    const books = JSON.parse(raw) as Book[];
-    const map = new Map(books.map((b) => [b.id, b] as const));
-    const ordered: Book[] = [];
-    for (const id of settings.bookOrder) {
-      const book = map.get(id);
-      if (book) {
-        ordered.push(book);
-        map.delete(id);
-      }
-    }
-    return [...ordered, ...map.values()];
-  } catch (err) {
-    return [];
-  }
+  return getBooksFromDb();
+}
+
+export async function getBlogOrder() {
+  const settings = await getSettings();
+  return settings.blogOrder || [];
 }
 
 export async function getMetadataForRSS() {
