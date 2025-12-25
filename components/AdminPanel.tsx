@@ -64,7 +64,6 @@ const getUploadLabel = (status: UploadStatus, idleLabel: string) => {
 };
 
 export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
-  const resetTimers = useRef<number[]>([]);
   const [blogOrder, setBlogOrder] = useState(posts.map((p) => p.slug));
   const [postList, setPostList] = useState(posts);
   const [bookList, setBookList] = useState(books);
@@ -263,7 +262,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     setUploadStatusWithReset(setPostCoverUploadStatus, 'uploading');
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch('/api/admin/upload', {
+    const res = await fetch('/api/admin/upload?folder=blog', {
       method: 'POST',
       body: formData,
     });
@@ -300,7 +299,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     updateBookUploadStatus(bookId, 'uploading');
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch('/api/admin/upload', {
+    const res = await fetch('/api/admin/upload?folder=books', {
       method: 'POST',
       body: formData,
     });
@@ -469,7 +468,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                         className="rounded-lg border px-3 py-1 text-sm font-semibold text-red-600"
                         disabled={postDeleting || postSaveStatus === 'saving'}
                       >
-                        {getActionLabel(postDeleteStatus, 'Delete')}
+                        {getActionLabel(postDeleting ? 'saving' : 'idle', 'Delete')}
                       </button>
                     </div>
                   </div>
