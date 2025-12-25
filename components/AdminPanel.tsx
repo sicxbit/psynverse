@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Book, Post } from '../lib/content-shared';
 import { applyPostOrdering } from '../lib/content-shared';
 
@@ -17,15 +17,23 @@ function moveItem<T>(arr: T[], from: number, to: number) {
   return copy;
 }
 
-const setStatusWithReset = <T extends string>(
-  setter: Dispatch<SetStateAction<T>>,
-  status: T,
-  registerTimeout: (id: number) => void,
+const setActionStatusWithReset = (
+  setter: Dispatch<SetStateAction<ActionStatus>>,
+  status: ActionStatus,
 ) => {
   setter(status);
   if (status === 'success' || status === 'error') {
-    const timeoutId = window.setTimeout(() => setter('idle' as T), STATUS_RESET_MS);
-    registerTimeout(timeoutId);
+    setTimeout(() => setter('idle'), STATUS_RESET_MS);
+  }
+};
+
+const setUploadStatusWithReset = (
+  setter: Dispatch<SetStateAction<UploadStatus>>,
+  status: UploadStatus,
+) => {
+  setter(status);
+  if (status === 'success' || status === 'error') {
+    setTimeout(() => setter('idle'), STATUS_RESET_MS);
   }
 };
 
@@ -64,7 +72,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   const [blogOrderStatus, setBlogOrderStatus] = useState<ActionStatus>('idle');
   const [booksSaveStatus, setBooksSaveStatus] = useState<ActionStatus>('idle');
   const [postSaveStatus, setPostSaveStatus] = useState<ActionStatus>('idle');
-  const [postDeleteStatus, setPostDeleteStatus] = useState<ActionStatus>('idle');
+  const [postDeleting, setPostDeleting] = useState(false);
   const [postCoverUploadStatus, setPostCoverUploadStatus] = useState<UploadStatus>('idle');
   const [bookUploadStatus, setBookUploadStatus] = useState<Record<string, UploadStatus>>({});
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
@@ -80,13 +88,6 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
 
   const orderedPosts = useMemo(() => applyPostOrdering(postList, blogOrder), [postList, blogOrder]);
   const bookUploadState = (bookId: string) => bookUploadStatus[bookId] || 'idle';
-  const registerTimeout = (id: number) => resetTimers.current.push(id);
-
-  useEffect(() => {
-    return () => {
-      resetTimers.current.forEach((timeoutId) => clearTimeout(timeoutId));
-    };
-  }, []);
 
   const resetPostForm = () => {
     setEditingSlug(null);
@@ -103,7 +104,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
 
   const saveBlogOrder = async () => {
     setMessage('');
-    setStatusWithReset(setBlogOrderStatus, 'saving', registerTimeout);
+    setActionStatusWithReset(setBlogOrderStatus, 'saving');
     const res = await fetch('/api/admin/save-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -112,7 +113,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to save order.');
-      setStatusWithReset(setBlogOrderStatus, 'error', registerTimeout);
+      setActionStatusWithReset(setBlogOrderStatus, 'error');
       return;
     }
     const data = await res.json().catch(() => ({}));
@@ -120,12 +121,12 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       setBlogOrder(data.blogOrder);
     }
     setMessage('Blog order saved.');
-    setStatusWithReset(setBlogOrderStatus, 'success', registerTimeout);
+    setActionStatusWithReset(setBlogOrderStatus, 'success');
   };
 
   const saveBooks = async () => {
     setMessage('');
-    setStatusWithReset(setBooksSaveStatus, 'saving', registerTimeout);
+    setActionStatusWithReset(setBooksSaveStatus, 'saving');
     const cleanedBooks = bookList.map((book) => ({
       ...book,
       title: book.title.trim(),
@@ -142,11 +143,11 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to update books.');
-      setStatusWithReset(setBooksSaveStatus, 'error', registerTimeout);
+      setActionStatusWithReset(setBooksSaveStatus, 'error');
       return;
     }
     setMessage('Books updated.');
-    setStatusWithReset(setBooksSaveStatus, 'success', registerTimeout);
+    setActionStatusWithReset(setBooksSaveStatus, 'success');
   };
 
   const handleBookChange = (index: number, field: keyof Book, value: string) => {
@@ -193,7 +194,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
 
   const savePost = async () => {
     setMessage('');
-    setStatusWithReset(setPostSaveStatus, 'saving', registerTimeout);
+    setActionStatusWithReset(setPostSaveStatus, 'saving');
     const payload = {
       post: postForm,
       ...(editingSlug ? { originalSlug: editingSlug } : {}),
@@ -206,7 +207,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to save post.');
-      setStatusWithReset(setPostSaveStatus, 'error', registerTimeout);
+      setActionStatusWithReset(setPostSaveStatus, 'error');
       return;
     }
     const data = await res.json();
@@ -218,13 +219,13 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       setBlogOrder(data.blogOrder);
     }
     setMessage(editingSlug ? 'Post updated.' : 'Post created.');
-    setStatusWithReset(setPostSaveStatus, 'success', registerTimeout);
+    setActionStatusWithReset(setPostSaveStatus, 'success');
     resetPostForm();
   };
 
   const deletePost = async (slug: string) => {
     setMessage('');
-    setStatusWithReset(setPostDeleteStatus, 'saving', registerTimeout);
+    setPostDeleting(true);
     const res = await fetch('/api/admin/posts', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -233,7 +234,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to delete post.');
-      setStatusWithReset(setPostDeleteStatus, 'error', registerTimeout);
+      setPostDeleting(false);
       return;
     }
     const data = await res.json();
@@ -247,7 +248,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       resetPostForm();
     }
     setMessage('Post deleted.');
-    setStatusWithReset(setPostDeleteStatus, 'success', registerTimeout);
+    setPostDeleting(false);
   };
 
   const logout = async () => {
@@ -259,7 +260,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     const file = event.target.files?.[0];
     if (!file) return;
     setMessage('');
-    setStatusWithReset(setPostCoverUploadStatus, 'uploading', registerTimeout);
+    setUploadStatusWithReset(setPostCoverUploadStatus, 'uploading');
     const formData = new FormData();
     formData.append('file', file);
     const res = await fetch('/api/admin/upload', {
@@ -269,7 +270,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to upload cover image.');
-      setStatusWithReset(setPostCoverUploadStatus, 'error', registerTimeout);
+      setUploadStatusWithReset(setPostCoverUploadStatus, 'error');
       event.target.value = '';
       return;
     }
@@ -278,24 +279,23 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       setPostForm((prev) => ({ ...prev, coverImage: data.secure_url }));
     }
     setMessage('Cover image uploaded.');
-    setStatusWithReset(setPostCoverUploadStatus, 'success', registerTimeout);
+    setUploadStatusWithReset(setPostCoverUploadStatus, 'success');
     event.target.value = '';
   };
 
   const updateBookUploadStatus = (bookId: string, status: UploadStatus) => {
     setBookUploadStatus((prev) => ({ ...prev, [bookId]: status }));
     if (status === 'success' || status === 'error') {
-      const timeoutId = window.setTimeout(() => {
+      setTimeout(() => {
         setBookUploadStatus((prev) => {
           if (prev[bookId] !== status) return prev;
           return { ...prev, [bookId]: 'idle' };
         });
       }, STATUS_RESET_MS);
-      registerTimeout(timeoutId);
     }
   };
 
-  const uploadBookImage = async (bookId: string, file: File) => {
+  const uploadBookImage = async (bookId: string, index: number, file: File) => {
     setMessage('');
     updateBookUploadStatus(bookId, 'uploading');
     const formData = new FormData();
@@ -312,9 +312,11 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     }
     const data = await res.json().catch(() => ({}));
     if (data.secure_url) {
-      setBookList((prev) =>
-        prev.map((book) => (book.id === bookId ? { ...book, image: data.secure_url } : book)),
-      );
+      setBookList((prev) => {
+        const copy = [...prev];
+        copy[index] = { ...copy[index], image: data.secure_url };
+        return copy;
+      });
     }
     setMessage('Book image uploaded.');
     updateBookUploadStatus(bookId, 'success');
@@ -464,8 +466,8 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                       </button>
                       <button
                         onClick={() => deletePost(post.slug)}
-                        className="rounded-lg border px-3 py-1 text-sm font-semibold text-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                        disabled={postDeleteStatus === 'saving' || postSaveStatus === 'saving'}
+                        className="rounded-lg border px-3 py-1 text-sm font-semibold text-red-600"
+                        disabled={postDeleting || postSaveStatus === 'saving'}
                       >
                         {getActionLabel(postDeleteStatus, 'Delete')}
                       </button>
@@ -644,7 +646,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      uploadBookImage(book.id, file);
+                      uploadBookImage(book.id, index, file);
                       e.target.value = '';
                     }}
                     disabled={bookUploadState(book.id) === 'uploading'}
