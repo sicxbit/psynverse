@@ -11,6 +11,10 @@ type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 const STATUS_RESET_MS = 1500;
 
+const getTodayISODate = () => {
+  return new Date().toISOString().slice(0, 10);
+};
+
 function moveItem<T>(arr: T[], from: number, to: number) {
   const copy = [...arr];
   const [item] = copy.splice(from, 1);
@@ -18,20 +22,14 @@ function moveItem<T>(arr: T[], from: number, to: number) {
   return copy;
 }
 
-const setActionStatusWithReset = (
-  setter: Dispatch<SetStateAction<ActionStatus>>,
-  status: ActionStatus,
-) => {
+const setActionStatusWithReset = (setter: Dispatch<SetStateAction<ActionStatus>>, status: ActionStatus) => {
   setter(status);
   if (status === 'success' || status === 'error') {
     setTimeout(() => setter('idle'), STATUS_RESET_MS);
   }
 };
 
-const setUploadStatusWithReset = (
-  setter: Dispatch<SetStateAction<UploadStatus>>,
-  status: UploadStatus,
-) => {
+const setUploadStatusWithReset = (setter: Dispatch<SetStateAction<UploadStatus>>, status: UploadStatus) => {
   setter(status);
   if (status === 'success' || status === 'error') {
     setTimeout(() => setter('idle'), STATUS_RESET_MS);
@@ -99,7 +97,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     setPostForm({
       title: '',
       slug: '',
-      date: '',
+      date: getTodayISODate(),
       excerpt: '',
       tags: '',
       coverImage: '',
@@ -290,13 +288,16 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
     if (!file) return;
     setMessage('');
     setUploadStatusWithReset(setPostCoverUploadStatus, 'uploading');
+
     const formData = new FormData();
     formData.append('file', file);
+
     const res = await fetch('/api/admin/upload?folder=blog', {
       method: 'POST',
       credentials: 'include',
       body: formData,
     });
+
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to upload cover image.');
@@ -304,6 +305,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       event.target.value = '';
       return;
     }
+
     const data = await res.json().catch(() => ({}));
     if (data.secure_url) {
       setPostForm((prev) => ({ ...prev, coverImage: data.secure_url }));
@@ -342,19 +344,23 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
   const uploadBookImage = async (bookId: string, index: number, file: File) => {
     setMessage('');
     updateBookUploadStatus(bookId, 'uploading');
+
     const formData = new FormData();
     formData.append('file', file);
+
     const res = await fetch('/api/admin/upload?folder=books', {
       method: 'POST',
       credentials: 'include',
       body: formData,
     });
+
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.message || 'Failed to upload book image.');
       updateBookUploadStatus(bookId, 'error');
       return;
     }
+
     const data = await res.json().catch(() => ({}));
     const secureUrl = data.secure_url || data.url;
     if (!secureUrl) {
@@ -362,11 +368,13 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
       updateBookUploadStatus(bookId, 'error');
       return;
     }
+
     setBookList((prev) => {
       const copy = [...prev];
       copy[index] = { ...copy[index], image: secureUrl };
       return copy;
     });
+
     try {
       await persistBookImage(bookId, secureUrl);
       setMessage('Book image saved.');
@@ -395,7 +403,10 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <h2 className="font-serif text-2xl text-midnight">Blog posts</h2>
           <div className="flex gap-2">
-            <button onClick={startNewPost} className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-white/70">
+            <button
+              onClick={startNewPost}
+              className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-white/70"
+            >
               New post
             </button>
             <button
@@ -409,6 +420,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
+          {/* LEFT: Post fields */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-midnight">{editingSlug ? 'Editing post' : 'New post'}</p>
@@ -421,6 +433,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                 </button>
               )}
             </div>
+
             <div className="space-y-3">
               <label className="space-y-1">
                 <span className="text-xs text-midnight/70">Title</span>
@@ -430,6 +443,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
                 />
               </label>
+
               <label className="space-y-1">
                 <span className="text-xs text-midnight/70">Slug</span>
                 <input
@@ -439,6 +453,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   placeholder="auto-generated from title if empty"
                 />
               </label>
+
               <label className="space-y-1">
                 <span className="text-xs text-midnight/70">Date</span>
                 <input
@@ -448,6 +463,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   placeholder="YYYY-MM-DD"
                 />
               </label>
+
               <label className="space-y-1">
                 <span className="text-xs text-midnight/70">Excerpt</span>
                 <textarea
@@ -457,6 +473,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   rows={2}
                 />
               </label>
+
               <label className="space-y-1">
                 <span className="text-xs text-midnight/70">Tags (comma separated)</span>
                 <input
@@ -465,6 +482,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
                 />
               </label>
+
               <label className="space-y-1">
                 <span className="text-xs text-midnight/70">Cover image URL</span>
                 <input
@@ -473,6 +491,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
                 />
               </label>
+
               <div className="flex items-center gap-2">
                 <label
                   className={`rounded-lg border px-3 py-1 text-sm font-semibold text-midnight hover:bg-white/70 cursor-pointer ${
@@ -490,10 +509,10 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                 </label>
                 <p className="text-xs text-midnight/70">Upload to Cloudinary to fill the cover URL automatically.</p>
               </div>
-              <MarkdownEditor value={postForm.content} onChange={(content) => handlePostFormChange('content', content)} />
             </div>
           </div>
 
+          {/* RIGHT: Existing posts */}
           <div className="space-y-3">
             <p className="text-sm font-semibold text-midnight">Existing posts</p>
             <div className="space-y-2 max-h-[540px] overflow-auto pr-1">
@@ -505,10 +524,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                       <p className="text-xs text-midnight/60">{post.date}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => startEditPost(post.slug)}
-                        className="rounded-lg border px-3 py-1 text-sm font-semibold"
-                      >
+                      <button onClick={() => startEditPost(post.slug)} className="rounded-lg border px-3 py-1 text-sm font-semibold">
                         Edit
                       </button>
                       <button
@@ -520,13 +536,16 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                       </button>
                     </div>
                   </div>
-                  {post.tags?.length ? (
-                    <p className="text-xs text-midnight/70">Tags: {post.tags.join(', ')}</p>
-                  ) : null}
+                  {post.tags?.length ? <p className="text-xs text-midnight/70">Tags: {post.tags.join(', ')}</p> : null}
                   {post.excerpt ? <p className="text-sm text-midnight/80">{post.excerpt}</p> : null}
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ✅ FULL WIDTH: Editor spans both columns */}
+          <div className="md:col-span-2">
+            <MarkdownEditor value={postForm.content} onChange={(content) => handlePostFormChange('content', content)} />
           </div>
         </div>
       </section>
@@ -561,9 +580,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                     ↑
                   </button>
                   <button
-                    onClick={() =>
-                      index < blogOrder.length - 1 && setBlogOrder((prev) => moveItem(prev, index, index + 1))
-                    }
+                    onClick={() => index < blogOrder.length - 1 && setBlogOrder((prev) => moveItem(prev, index, index + 1))}
                     className="rounded-lg border px-3 py-1 text-sm"
                     disabled={index === blogOrder.length - 1}
                   >
@@ -580,10 +597,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-2xl text-midnight">Books & resources</h2>
           <div className="flex gap-2">
-            <button
-              onClick={addBook}
-              className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-white/70"
-            >
+            <button onClick={addBook} className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-white/70">
               Add book
             </button>
             <button
@@ -595,6 +609,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
             </button>
           </div>
         </div>
+
         <div className="space-y-4">
           {bookList.map((book, index) => (
             <div key={book.id} className="rounded-2xl bg-white/70 p-4 space-y-3">
@@ -609,18 +624,13 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                     ↑
                   </button>
                   <button
-                    onClick={() =>
-                      index < bookList.length - 1 && setBookList((prev) => moveItem(prev, index, index + 1))
-                    }
+                    onClick={() => index < bookList.length - 1 && setBookList((prev) => moveItem(prev, index, index + 1))}
                     className="rounded-lg border px-3 py-1 text-sm"
                     disabled={index === bookList.length - 1}
                   >
                     ↓
                   </button>
-                  <button
-                    onClick={() => deleteBook(index)}
-                    className="rounded-lg border px-3 py-1 text-sm text-red-600"
-                  >
+                  <button onClick={() => deleteBook(index)} className="rounded-lg border px-3 py-1 text-sm text-red-600">
                     Delete
                   </button>
                   {book.link && (
@@ -635,6 +645,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   )}
                 </div>
               </div>
+
               <div className="grid md:grid-cols-2 gap-3">
                 <label className="space-y-1">
                   <span className="text-xs text-midnight/70">Book name</span>
@@ -680,6 +691,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                   />
                 </label>
               </div>
+
               <div className="flex flex-wrap items-center gap-2">
                 <label
                   className={`rounded-lg border px-3 py-1 text-sm font-semibold text-midnight hover:bg-white/70 cursor-pointer ${

@@ -41,6 +41,7 @@ function httpError(status: number, message: string): HttpError {
 }
 
 export function sanitizeSlug(value: string) {
+  if (!value) return '';
   return value
     .toLowerCase()
     .trim()
@@ -49,6 +50,7 @@ export function sanitizeSlug(value: string) {
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
 
 function normalizeTags(tags?: string[] | string) {
   if (!tags) return [] as string[];

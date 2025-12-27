@@ -5,7 +5,7 @@ import { getAllPosts, getBooks } from '../../lib/content';
 import { getSessionFromCookies } from '../../lib/auth';
 
 export default async function AdminPage() {
-  const session = getSessionFromCookies();
+  const session = await getSessionFromCookies();
   if (!session) {
     return (
       <main className="min-h-screen flex items-center justify-center relative">
