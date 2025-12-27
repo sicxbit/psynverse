@@ -12,8 +12,15 @@ import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const trimmedSlug = slug?.trim();
+
+  if (!trimmedSlug) {
+    return { title: 'Post not found • Psynverse' };
+  }
+
+  const post = await getPostBySlug(trimmedSlug);
   if (!post) return { title: 'Post not found • Psynverse' };
   return {
     title: `${post.title} • Psynverse`,
@@ -21,8 +28,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function BlogDetail({ params }: { params: { slug: string } }) {
-  const post = await getPostBySlug(params.slug);
+export default async function BlogDetail({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const trimmedSlug = slug?.trim();
+
+  if (!trimmedSlug) return notFound();
+
+  const post = await getPostBySlug(trimmedSlug);
   if (!post || post.published === false) return notFound();
 
   const allPosts = await getAllPosts();
