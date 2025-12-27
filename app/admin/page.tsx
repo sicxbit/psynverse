@@ -8,10 +8,12 @@ export default async function AdminPage() {
   const session = getSessionFromCookies();
   if (!session) {
     return (
-      <main className="min-h-screen flex items-center justify-center relative">
-        <HomeLogoLink className="fixed right-6 top-6" />
-        <AdminLogin />
-      </main>
+      <>
+        <HomeLogoLink className="fixed right-6 top-6 z-10" />
+        <main className="min-h-screen flex items-center justify-center">
+          <AdminLogin />
+        </main>
+      </>
     );
   }
 
