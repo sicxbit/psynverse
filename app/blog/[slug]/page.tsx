@@ -97,7 +97,6 @@ export default async function BlogDetail({ params }: { params: Promise<{ slug: s
           <h1 className="text-3xl font-semibold text-midnight md:text-4xl">{post.title}</h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-midnight/70">
-            {post.author ? <span>{post.author}</span> : null}
             {post.date ? <span>•</span> : null}
             {post.date ? <span>{format(new Date(post.date), 'MMM d, yyyy')}</span> : null}
           </div>
