@@ -4,7 +4,8 @@ const nextConfig = {
     domains: ["res.cloudinary.com"],
   },
   experimental: {
-    mdxRs: true
+    mdxRs: true,
+    turbopackUseSystemTlsCerts: true,
   }
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -28,6 +28,21 @@ const BUTTON_CLASS =
 
 const escapeForRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+type ToolbarButton =
+  | { label: string; type: 'wrap'; prefix: string; suffix: string; placeholder: string }
+  | { label: string; type: 'prefix'; prefix: string; placeholder: string; numbered?: boolean }
+  | { label: string; type: 'link' };
+
+const TOOLBAR_BUTTONS: ToolbarButton[] = [
+  { label: 'Bold', type: 'wrap', prefix: '**', suffix: '**', placeholder: 'bold text' },
+  { label: 'Italic', type: 'wrap', prefix: '*', suffix: '*', placeholder: 'italic text' },
+  { label: 'H2', type: 'prefix', prefix: '## ', placeholder: 'Heading' },
+  { label: 'H3', type: 'prefix', prefix: '### ', placeholder: 'Heading' },
+  { label: 'Bullets', type: 'prefix', prefix: '- ', placeholder: 'List item' },
+  { label: 'Numbers', type: 'prefix', prefix: '', placeholder: 'List item', numbered: true },
+  { label: 'Link', type: 'link' },
+];
+
 export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
@@ -43,60 +58,69 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
     }
   };
 
-  const modifyValue = (
-    builder: (currentValue: string, selection: SelectionState) => {
-      text: string;
-      selectionStart: number;
-      selectionEnd: number;
+  const modifyValue = useCallback(
+    (
+      builder: (currentValue: string, selection: SelectionState) => {
+        text: string;
+        selectionStart: number;
+        selectionEnd: number;
+      },
+    ) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const selectionStart = textarea.selectionStart ?? value.length;
+      const selectionEnd = textarea.selectionEnd ?? value.length;
+      const result = builder(value, { selectionStart, selectionEnd });
+      onChange(result.text);
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
+      });
     },
-  ) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const selectionStart = textarea.selectionStart ?? value.length;
-    const selectionEnd = textarea.selectionEnd ?? value.length;
-    const result = builder(value, { selectionStart, selectionEnd });
-    onChange(result.text);
-    requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
-    });
-  };
+    [onChange, value],
+  );
 
-  const wrapSelection = (prefix: string, suffix: string, placeholder: string) => {
-    modifyValue((currentValue, selection) => {
-      const selectedText = currentValue.slice(selection.selectionStart, selection.selectionEnd) || placeholder;
-      const wrapped = `${prefix}${selectedText}${suffix}`;
-      const newValue =
-        currentValue.slice(0, selection.selectionStart) + wrapped + currentValue.slice(selection.selectionEnd);
-      const start = selection.selectionStart + prefix.length;
-      const end = start + selectedText.length;
-      return { text: newValue, selectionStart: start, selectionEnd: end };
-    });
-  };
+  const wrapSelection = useCallback(
+    (prefix: string, suffix: string, placeholder: string) => {
+      modifyValue((currentValue, selection) => {
+        const selectedText = currentValue.slice(selection.selectionStart, selection.selectionEnd) || placeholder;
+        const wrapped = `${prefix}${selectedText}${suffix}`;
+        const newValue =
+          currentValue.slice(0, selection.selectionStart) + wrapped + currentValue.slice(selection.selectionEnd);
+        const start = selection.selectionStart + prefix.length;
+        const end = start + selectedText.length;
+        return { text: newValue, selectionStart: start, selectionEnd: end };
+      });
+    },
+    [modifyValue],
+  );
 
-  const prefixLines = (prefix: string, placeholder: string, numbered = false) => {
-    modifyValue((currentValue, selection) => {
-      const selectedText = currentValue.slice(selection.selectionStart, selection.selectionEnd) || placeholder;
-      const lines = selectedText.split('\n');
-      const prefixPattern = numbered ? /^\d+\.\s*/ : new RegExp(`^${escapeForRegex(prefix)}?\\s*`);
-      const prefixed = lines
-        .map((line, index) => {
-          const cleanLine = line.replace(prefixPattern, '');
-          if (numbered) {
-            return `${index + 1}. ${cleanLine || placeholder}`;
-          }
-          return `${prefix}${cleanLine || placeholder}`;
-        })
-        .join('\n');
-      const newValue =
-        currentValue.slice(0, selection.selectionStart) + prefixed + currentValue.slice(selection.selectionEnd);
-      const start = selection.selectionStart;
-      const end = start + prefixed.length;
-      return { text: newValue, selectionStart: start, selectionEnd: end };
-    });
-  };
+  const prefixLines = useCallback(
+    (prefix: string, placeholder: string, numbered = false) => {
+      modifyValue((currentValue, selection) => {
+        const selectedText = currentValue.slice(selection.selectionStart, selection.selectionEnd) || placeholder;
+        const lines = selectedText.split('\n');
+        const prefixPattern = numbered ? /^\d+\.\s*/ : new RegExp(`^${escapeForRegex(prefix)}?\\s*`);
+        const prefixed = lines
+          .map((line, index) => {
+            const cleanLine = line.replace(prefixPattern, '');
+            if (numbered) {
+              return `${index + 1}. ${cleanLine || placeholder}`;
+            }
+            return `${prefix}${cleanLine || placeholder}`;
+          })
+          .join('\n');
+        const newValue =
+          currentValue.slice(0, selection.selectionStart) + prefixed + currentValue.slice(selection.selectionEnd);
+        const start = selection.selectionStart;
+        const end = start + prefixed.length;
+        return { text: newValue, selectionStart: start, selectionEnd: end };
+      });
+    },
+    [modifyValue],
+  );
 
-  const applyLink = () => {
+  const applyLink = useCallback(() => {
     modifyValue((currentValue, selection) => {
       const selectedText = currentValue.slice(selection.selectionStart, selection.selectionEnd) || 'link text';
       const urlPlaceholder = 'https://';
@@ -107,7 +131,7 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
       const urlEnd = urlStart + urlPlaceholder.length;
       return { text: newValue, selectionStart: urlStart, selectionEnd: urlEnd };
     });
-  };
+  }, [modifyValue]);
 
   const insertImage = (url: string, altText: string, alignment: ImageAlignment, size: ImageSize) => {
     modifyValue((currentValue, selection) => {
@@ -156,23 +180,35 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
     }
   };
 
-  const toolbarButtons = [
-    { label: 'Bold', action: () => wrapSelection('**', '**', 'bold text') },
-    { label: 'Italic', action: () => wrapSelection('*', '*', 'italic text') },
-    { label: 'H2', action: () => prefixLines('## ', 'Heading') },
-    { label: 'H3', action: () => prefixLines('### ', 'Heading') },
-    { label: 'Bullets', action: () => prefixLines('- ', 'List item') },
-    { label: 'Numbers', action: () => prefixLines('', 'List item', true) },
-    { label: 'Link', action: applyLink },
-  ];
+  const handleToolbarClick = useCallback(
+    (button: ToolbarButton) => {
+      if (button.type === 'wrap') {
+        wrapSelection(button.prefix, button.suffix, button.placeholder);
+        return;
+      }
+
+      if (button.type === 'prefix') {
+        prefixLines(button.prefix, button.placeholder, button.numbered);
+        return;
+      }
+
+      applyLink();
+    },
+    [applyLink, prefixLines, wrapSelection],
+  );
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-xs font-semibold text-midnight/70">Content (Markdown)</p>
         <div className="flex flex-wrap gap-2">
-          {toolbarButtons.map((button) => (
-            <button key={button.label} type="button" onClick={button.action} className={BUTTON_CLASS}>
+          {TOOLBAR_BUTTONS.map((button) => (
+            <button
+              key={button.label}
+              type="button"
+              onClick={() => handleToolbarClick(button)}
+              className={BUTTON_CLASS}
+            >
               {button.label}
             </button>
           ))}
@@ -242,7 +278,7 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
 
       {uploadError ? <p className="text-xs text-red-600">{uploadError}</p> : null}
 
-      <div className="grid gap-4 items-start md:grid-cols-[1.05fr_1.35fr] xl:grid-cols-[1fr_1.6fr]">
+      <div className="grid gap-4 items-start md:grid-cols-[0.9fr_1.6fr] xl:grid-cols-[0.85fr_1.85fr]">
         <textarea
           ref={textareaRef}
           value={value}
@@ -252,9 +288,9 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
           placeholder="Write your markdown here..."
         />
 
-        <div className="flex h-full flex-col rounded-xl border border-white/60 bg-white/70 p-4 shadow-inner">
+        <div className="flex h-full min-h-[360px] flex-col rounded-xl border border-white/60 bg-white/70 p-4 shadow-inner md:min-h-[520px]">
           <p className="mb-2 text-xs font-semibold text-midnight/70">Live preview</p>
-          <div className="prose max-h-[520px] md:max-h-[70vh] max-w-none grow overflow-auto pr-2">
+          <div className="prose max-h-[620px] md:max-h-[80vh] max-w-none grow overflow-auto pr-2 md:min-h-[320px]">
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
               {value || '*Start writing to see the preview...*'}
             </ReactMarkdown>
