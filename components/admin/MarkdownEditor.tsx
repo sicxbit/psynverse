@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -21,6 +21,8 @@ const STATUS_RESET_MS = 1500;
 
 const BUTTON_CLASS =
   'rounded-lg border px-3 py-2 text-xs font-semibold text-midnight hover:bg-white/80 disabled:opacity-60 disabled:cursor-not-allowed';
+
+const escapeForRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -69,9 +71,10 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
     modifyValue((currentValue, selection) => {
       const selectedText = currentValue.slice(selection.selectionStart, selection.selectionEnd) || placeholder;
       const lines = selectedText.split('\n');
+      const prefixPattern = numbered ? /^\d+\.\s*/ : new RegExp(`^${escapeForRegex(prefix)}?\\s*`);
       const prefixed = lines
         .map((line, index) => {
-          const cleanLine = line.replace(new RegExp(`^${numbered ? '\\d+\\.\\s*' : `${prefix.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}?\\s*`}`), ''));
+          const cleanLine = line.replace(prefixPattern, '');
           if (numbered) {
             return `${index + 1}. ${cleanLine || placeholder}`;
           }
@@ -147,18 +150,15 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
     }
   };
 
-  const toolbarButtons = useMemo(
-    () => [
-      { label: 'Bold', action: () => wrapSelection('**', '**', 'bold text') },
-      { label: 'Italic', action: () => wrapSelection('*', '*', 'italic text') },
-      { label: 'H2', action: () => prefixLines('## ', 'Heading') },
-      { label: 'H3', action: () => prefixLines('### ', 'Heading') },
-      { label: 'Bullets', action: () => prefixLines('- ', 'List item') },
-      { label: 'Numbers', action: () => prefixLines('', 'List item', true) },
-      { label: 'Link', action: applyLink },
-    ],
-    [],
-  );
+  const toolbarButtons = [
+    { label: 'Bold', action: () => wrapSelection('**', '**', 'bold text') },
+    { label: 'Italic', action: () => wrapSelection('*', '*', 'italic text') },
+    { label: 'H2', action: () => prefixLines('## ', 'Heading') },
+    { label: 'H3', action: () => prefixLines('### ', 'Heading') },
+    { label: 'Bullets', action: () => prefixLines('- ', 'List item') },
+    { label: 'Numbers', action: () => prefixLines('', 'List item', true) },
+    { label: 'Link', action: applyLink },
+  ];
 
   return (
     <div className="space-y-2">
