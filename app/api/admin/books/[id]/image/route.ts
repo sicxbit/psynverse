@@ -15,14 +15,15 @@ function isValidHttpsUrl(value: string) {
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = requireAdmin(req);
   if (!session) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const id = params?.id ? String(params.id).trim() : '';
-  if (!id) {
+  const { id } = await params;
+  const trimmedId = String(id ?? '').trim();
+  if (!trimmedId) {
     return NextResponse.json({ message: 'Book id is required' }, { status: 400 });
   }
 
@@ -34,12 +35,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id?: strin
   }
 
   try {
-    await updateBookImage(id, image);
+    await updateBookImage(trimmedId, image);
     revalidatePath('/');
     revalidatePath('/books');
   } catch (error: any) {
     return NextResponse.json({ message: error?.message || 'Failed to update book image' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, id, image });
+  return NextResponse.json({ ok: true, id: trimmedId, image });
 }
