@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
+import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
 import Image from 'next/image';
@@ -74,7 +75,10 @@ export default async function BlogDetail({ params }: { params: { slug: string } 
       )}
 
       <article className="prose card p-6">
-        <MDXRemote source={post.content} options={{ mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins: [rehypeSlug] } }} />
+        <MDXRemote
+          source={post.content}
+          options={{ mdxOptions: { remarkPlugins: [remarkGfm], rehypePlugins: [rehypeRaw, rehypeSlug] } }}
+        />
       </article>
 
       <div className="flex items-center justify-between text-sm text-midnight/70">

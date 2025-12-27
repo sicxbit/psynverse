@@ -21,3 +21,44 @@ a {
 .card {
   @apply bg-white/80 backdrop-blur-sm rounded-3xl shadow-soft border border-white/60;
 }
+
+.blog-image {
+  margin: 1rem 0;
+}
+
+.blog-image.left {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.blog-image.center {
+  display: flex;
+  justify-content: center;
+}
+
+.blog-image.right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.blog-image img {
+  height: auto;
+  border-radius: 12px;
+  width: 100%;
+}
+
+.blog-image.w-sm img {
+  max-width: 320px;
+}
+
+.blog-image.w-md img {
+  max-width: 520px;
+}
+
+.blog-image.w-lg img {
+  max-width: 760px;
+}
+
+.blog-image.w-full img {
+  max-width: 100%;
+}
