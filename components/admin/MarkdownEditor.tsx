@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
@@ -17,6 +18,9 @@ type SelectionState = {
   selectionEnd: number;
 };
 
+type ImageAlignment = 'left' | 'center' | 'right';
+type ImageSize = 'w-sm' | 'w-md' | 'w-lg' | 'w-full';
+
 const STATUS_RESET_MS = 1500;
 
 const BUTTON_CLASS =
@@ -28,6 +32,9 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [uploadError, setUploadError] = useState('');
+  const [imageAlignment, setImageAlignment] = useState<ImageAlignment>('center');
+  const [imageSize, setImageSize] = useState<ImageSize>('w-md');
+  const [imageAlt, setImageAlt] = useState('');
 
   const resetUploadStatus = (status: UploadStatus) => {
     setUploadStatus(status);
@@ -102,15 +109,14 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
     });
   };
 
-  const insertImage = (url: string) => {
+  const insertImage = (url: string, altText: string, alignment: ImageAlignment, size: ImageSize) => {
     modifyValue((currentValue, selection) => {
-      const altText = 'alt text';
-      const imageMarkdown = `![${altText}](${url})`;
+      const safeAltText = (altText.trim() || 'Image').replace(/"/g, '&quot;');
+      const figure = `\n<figure class="blog-image ${alignment} ${size}">\n  <img src="${url}" alt="${safeAltText}" />\n</figure>\n`;
       const newValue =
-        currentValue.slice(0, selection.selectionStart) + imageMarkdown + currentValue.slice(selection.selectionEnd);
-      const altStart = selection.selectionStart + 2;
-      const altEnd = altStart + altText.length;
-      return { text: newValue, selectionStart: altStart, selectionEnd: altEnd };
+        currentValue.slice(0, selection.selectionStart) + figure + currentValue.slice(selection.selectionEnd);
+      const cursor = selection.selectionStart + figure.length;
+      return { text: newValue, selectionStart: cursor, selectionEnd: cursor };
     });
   };
 
@@ -142,7 +148,7 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
         return;
       }
 
-      insertImage(secureUrl);
+      insertImage(secureUrl, imageAlt, imageAlignment, imageSize);
       resetUploadStatus('success');
     } catch (error: any) {
       resetUploadStatus('error');
@@ -161,7 +167,7 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
   ];
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-xs font-semibold text-midnight/70">Content (Markdown)</p>
         <div className="flex flex-wrap gap-2">
@@ -170,7 +176,46 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
               {button.label}
             </button>
           ))}
-          <label className={`${BUTTON_CLASS} cursor-pointer`}>
+        </div>
+      </div>
+
+      <div className="grid gap-3 rounded-xl border border-white/70 bg-white/70 p-3 shadow-inner sm:grid-cols-2 lg:grid-cols-4">
+        <label className="space-y-1 text-xs font-semibold text-midnight/70">
+          <span>Image alignment</span>
+          <select
+            value={imageAlignment}
+            onChange={(event) => setImageAlignment(event.target.value as ImageAlignment)}
+            className="w-full rounded-lg border border-midnight/10 bg-white px-3 py-2 text-sm text-midnight shadow-inner"
+          >
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </select>
+        </label>
+        <label className="space-y-1 text-xs font-semibold text-midnight/70">
+          <span>Image width</span>
+          <select
+            value={imageSize}
+            onChange={(event) => setImageSize(event.target.value as ImageSize)}
+            className="w-full rounded-lg border border-midnight/10 bg-white px-3 py-2 text-sm text-midnight shadow-inner"
+          >
+            <option value="w-sm">Small</option>
+            <option value="w-md">Medium</option>
+            <option value="w-lg">Large</option>
+            <option value="w-full">Full width</option>
+          </select>
+        </label>
+        <label className="space-y-1 text-xs font-semibold text-midnight/70 sm:col-span-2 lg:col-span-1">
+          <span>Alt text (optional)</span>
+          <input
+            value={imageAlt}
+            onChange={(event) => setImageAlt(event.target.value)}
+            className="w-full rounded-lg border border-midnight/10 bg-white px-3 py-2 text-sm text-midnight shadow-inner"
+            placeholder="Describe the image"
+          />
+        </label>
+        <div className="flex items-end sm:col-span-2 lg:col-span-1">
+          <label className={`${BUTTON_CLASS} w-full text-center cursor-pointer`}>
             <input
               type="file"
               accept="image/*"
@@ -197,20 +242,22 @@ export function MarkdownEditor({ value, onChange, uploadFolder = 'blog' }: Markd
 
       {uploadError ? <p className="text-xs text-red-600">{uploadError}</p> : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 items-start md:grid-cols-[1.05fr_1.35fr] xl:grid-cols-[1fr_1.6fr]">
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className="w-full rounded-xl border border-midnight/10 bg-white px-3 py-2 text-sm leading-6 shadow-inner"
-          rows={12}
+          rows={14}
           placeholder="Write your markdown here..."
         />
 
-        <div className="rounded-xl border border-white/60 bg-white/70 p-3 shadow-inner">
+        <div className="flex h-full flex-col rounded-xl border border-white/60 bg-white/70 p-4 shadow-inner">
           <p className="mb-2 text-xs font-semibold text-midnight/70">Live preview</p>
-          <div className="prose max-h-[360px] max-w-none overflow-auto pr-2">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{value || '*Start writing to see the preview...*'}</ReactMarkdown>
+          <div className="prose max-h-[520px] md:max-h-[70vh] max-w-none grow overflow-auto pr-2">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              {value || '*Start writing to see the preview...*'}
+            </ReactMarkdown>
           </div>
         </div>
       </div>
