@@ -4,6 +4,7 @@ import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { useMemo, useState } from 'react';
 import type { Book, Post } from '../lib/content-shared';
 import { applyPostOrdering } from '../lib/content-shared';
+import { MarkdownEditor } from './admin/MarkdownEditor';
 
 type ActionStatus = 'idle' | 'saving' | 'success' | 'error';
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
@@ -489,15 +490,7 @@ export function AdminPanel({ posts, books }: { posts: Post[]; books: Book[] }) {
                 </label>
                 <p className="text-xs text-midnight/70">Upload to Cloudinary to fill the cover URL automatically.</p>
               </div>
-              <label className="space-y-1">
-                <span className="text-xs text-midnight/70">Content (Markdown)</span>
-                <textarea
-                  value={postForm.content}
-                  onChange={(e) => handlePostFormChange('content', e.target.value)}
-                  className="w-full rounded-xl border border-midnight/10 px-3 py-2 bg-white"
-                  rows={6}
-                />
-              </label>
+              <MarkdownEditor value={postForm.content} onChange={(content) => handlePostFormChange('content', content)} />
             </div>
           </div>
 
